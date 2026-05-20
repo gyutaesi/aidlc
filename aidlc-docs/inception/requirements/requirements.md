@@ -13,7 +13,7 @@
 | **사용자 요청** | 링크를 저장하고, 개인 프로필이나 가이드로 만들어 공유하는 북마크 매니저 "moaring" 신규 개발 |
 | **요청 유형** | New Project (Greenfield) |
 | **범위 추정** | System-wide — 웹 앱 + Chrome Extension + AWS 인프라 |
-| **복잡도 추정** | Complex — 다중 컴포넌트, 공유 페이지, 스케줄러, 파일 업로드, 외부 API 연동 |
+| **복잡도 추정** | Complex — 다중 컴포넌트, 공유 페이지, 파일 업로드, 외부 API 연동 |
 | **핵심 컨셉** | 단순 북마크 저장을 넘어 "링크 묶음 → 스토리가 있는 페이지 → URL 하나로 공유" |
 
 ---
@@ -40,8 +40,6 @@
 | **파일 저장** | AWS S3 + CloudFront | 이미지 업로드, 썸네일 CDN |
 | **인증** | Amazon Cognito User Pool | 이메일+비밀번호, JWT 발급, 이메일 인증, 비밀번호 재설정 내장 |
 | **이메일** | Cognito 기본 이메일 (MVP) → Amazon SES (Post-MVP) | MVP: Cognito 내장 이메일 사용 (50건/일 제한), 추후 SES로 전환 |
-| **스케줄러** | Amazon EventBridge Scheduler + Lambda | 링크 상태 체크 (매일 1회) |
-| **큐** | Amazon SQS | 대량 링크 체크 배치 처리 |
 | **컨테이너** | Amazon ECS/Fargate + ECR | 컨테이너 배포 |
 | **CDN/네트워크** | Amazon CloudFront + ALB | 정적 자산 CDN, 로드밸런서 |
 | **Chrome Extension** | MV3 (Manifest V3) + React | Developer mode 배포 (MVP) |
@@ -64,14 +62,6 @@
         |
         v
 [Aurora PostgreSQL Serverless v2]
-
-[EventBridge Scheduler]
-        |
-        v
-[Lambda / ECS Task: 링크 상태 체크]
-        |
-        v
-[SQS: 링크 체크 큐] → [Lambda Worker]
 
 [Amazon ECR: 컨테이너 이미지]
 (Amazon SES: Post-MVP — Cognito 커스텀 이메일 발신자 연동)
@@ -157,34 +147,25 @@
 | FR-06-2 | 제목 + URL + 메모 + 태그 + 컬렉션 블록 텍스트 전체 검색 (로그인한 본인 데이터만 검색 대상) | Must |
 | FR-06-3 | PostgreSQL tsvector + GIN 인덱스 기반 풀텍스트 검색 | Must |
 
-### FR-07. 링크 상태 체크
+### FR-07. Chrome Extension
 
 | ID | 요구사항 | 우선순위 |
 |----|----------|----------|
-| FR-07-1 | EventBridge Scheduler로 매일 1회 전체 사용자의 모든 북마크 링크 유효성 확인 | Must |
-| FR-07-2 | SQS 큐 + Lambda Worker로 배치 처리 | Must |
-| FR-07-3 | 404 / 접근 불가 링크에 "죽은 링크" 뱃지 표시 | Must |
-| FR-07-4 | 죽은 링크 발생 시 in-app 알림 표시 (이메일 알림은 Post-MVP) | Must |
+| FR-07-1 | 현재 페이지 저장: 그룹 선택 + 태그 입력 + 메모 입력 후 저장 | Must |
+| FR-07-2 | 그룹 미선택 시 인박스로 자동 이동 | Must |
+| FR-07-3 | 자동 추천: `chrome.topSites` API로 자주 방문하지만 미등록된 사이트 목록 표시 | Must |
+| FR-07-4 | 자동 추천 원클릭 인박스 추가 | Must |
+| FR-07-5 | AI 기반 자동 추천 — **MVP 제외, 추후 Google Gemini로 추가 예정** | Post-MVP |
+| FR-07-6 | 최근 저장 목록 표시 | Must |
+| FR-07-7 | Extension 로그인: Cognito Hosted UI 또는 직접 API 호출 방식으로 인증, `chrome.storage.local`에 토큰 안전 저장 | Must |
+| FR-07-8 | MV3 매니페스트, Developer mode 배포 (MVP), 추후 Chrome Web Store 정식 배포 | Must |
 
-### FR-08. Chrome Extension
-
-| ID | 요구사항 | 우선순위 |
-|----|----------|----------|
-| FR-08-1 | 현재 페이지 저장: 그룹 선택 + 태그 입력 + 메모 입력 후 저장 | Must |
-| FR-08-2 | 그룹 미선택 시 인박스로 자동 이동 | Must |
-| FR-08-3 | 자동 추천: `chrome.topSites` API로 자주 방문하지만 미등록된 사이트 목록 표시 | Must |
-| FR-08-4 | 자동 추천 원클릭 인박스 추가 | Must |
-| FR-08-5 | AI 기반 자동 추천 — **MVP 제외, 추후 Google Gemini로 추가 예정** | Post-MVP |
-| FR-08-6 | 최근 저장 목록 표시 | Must |
-| FR-08-7 | Extension 로그인: Cognito Hosted UI 또는 직접 API 호출 방식으로 인증, `chrome.storage.local`에 토큰 안전 저장 | Must |
-| FR-08-8 | MV3 매니페스트, Developer mode 배포 (MVP), 추후 Chrome Web Store 정식 배포 | Must |
-
-### FR-09. 데이터 내보내기 (Export)
+### FR-08. 데이터 내보내기 (Export)
 
 | ID | 요구사항 | 우선순위 |
 |----|----------|----------|
-| FR-09-1 | JSON 형식으로 전체 데이터 내보내기 | Must |
-| FR-09-2 | Chrome 북마크 HTML 형식으로 내보내기 | Must |
+| FR-08-1 | JSON 형식으로 전체 데이터 내보내기 | Must |
+| FR-08-2 | Chrome 북마크 HTML 형식으로 내보내기 | Must |
 
 ---
 
@@ -254,8 +235,6 @@
 | Amazon CloudFront | CDN, 정적 자산 배포 | OAC 설정 |
 | Amazon Cognito User Pool | 인증 (회원가입/로그인/JWT/이메일 인증/비밀번호 재설정) | Cognito 기본 이메일 사용 (MVP) |
 | Amazon SES | 커스텀 발신자 이메일 발송 | **Post-MVP** (SES 샌드박스 해제 후 Cognito 연동) |
-| Amazon EventBridge Scheduler | 링크 체크 스케줄러 | 매일 1회 |
-| Amazon SQS | 링크 체크 배치 큐 | Lambda Worker 연동 |
 | Amazon ECS/Fargate | 앱 컨테이너 실행 | Next.js 앱 |
 | Amazon ECR | 컨테이너 이미지 레지스트리 | |
 | Chrome Extension API | `chrome.topSites` | 자주 방문 사이트 추천 |
@@ -276,7 +255,6 @@ User
 
 Bookmark
   ├── id, user_id, url, title, description, thumbnail_url
-  ├── is_dead: boolean (링크 상태 체크 결과)
   ├── memo: string
   └── created_at, updated_at
   (소속 여부는 status 필드 없이 BookmarkGroup 관계 테이블 존재 여부로 판단)
@@ -330,11 +308,11 @@ CollectionLinkClick (링크 클릭 통계 테이블)
 | 3 | 그룹 | 컬럼 형태, 비공개, 컬렉션 변환 |
 | 4 | 컬렉션 | 블록 편집, 공유 URL, 템플릿, 통계, 좋아요 |
 | 5 | 빠른 검색 | Cmd+K, 풀텍스트 (PostgreSQL) |
-| 6 | 링크 상태 체크 | EventBridge + SQS + Lambda, 매일 1회 |
-| 7 | 북마크 Import | 크롬 HTML 파싱 → 인박스 일괄 추가 |
-| 8 | Chrome Extension | 현재 페이지 저장, 자주 방문 추천(빈도 기반), 최근 저장 목록 |
+| 6 | 북마크 Import | 크롬 HTML 파싱 → 인박스 일괄 추가 |
+| 7 | Chrome Extension | 현재 페이지 저장, 자주 방문 추천(빈도 기반), 최근 저장 목록 |
 
 **MVP 제외 (Post-MVP):**
+- 링크 상태 체크 (EventBridge + SQS + Lambda — Post-MVP로 이동)
 - Google OAuth (Cognito에 추후 Social Provider 추가)
 - Amazon SES 연동 (커스텀 발신자 도메인, 현재는 Cognito 기본 이메일 사용)
 - AI 기반 자동 추천 (추후 Google Gemini)

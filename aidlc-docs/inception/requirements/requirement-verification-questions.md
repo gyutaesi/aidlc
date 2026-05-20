@@ -196,6 +196,8 @@ X) Other (please describe after [Answer]: tag below)
 
 > **💡 AWS 기준 추천: A) 백엔드 스케줄러 (Amazon EventBridge Scheduler + Lambda)**
 > AWS에서는 **Amazon EventBridge Scheduler**로 매일 정해진 시간에 Lambda 함수를 트리거하거나, ECS Task를 실행하여 링크 상태를 일괄 체크할 수 있습니다. 대량 링크 처리 시에는 **Amazon SQS**에 링크를 큐잉하고 Lambda가 배치로 처리하는 패턴이 효율적입니다. 서버리스이므로 스케줄러 실행 시간에만 비용이 발생합니다.
+>
+> ⚠️ **참고**: 이 기능은 MVP에서 제외됨 (Post-MVP로 이동)
 
 ---
 

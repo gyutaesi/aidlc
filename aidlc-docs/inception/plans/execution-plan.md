@@ -92,7 +92,7 @@
   - 근거: 요구사항이 이미 매우 상세하게 정의됨. 8개 기능 모두 명확한 FR로 문서화. 추가 User Stories가 구현에 새로운 가치를 더하지 않음.
 - [x] **Workflow Planning** — IN PROGRESS
 - [ ] **Application Design** — **EXECUTE**
-  - 근거: 신규 시스템으로 웹앱(Next.js), 백엔드 API, Chrome Extension, Lambda Worker 등 다수의 신규 컴포넌트 설계 필요. 컴포넌트 간 의존성과 서비스 레이어 정의가 코드 생성 전에 필요.
+  - 근거: 신규 시스템으로 웹앱(Next.js), 백엔드 API, Chrome Extension 등 다수의 신규 컴포넌트 설계 필요. 컴포넌트 간 의존성과 서비스 레이어 정의가 코드 생성 전에 필요.
 - [ ] **Units Generation** — **EXECUTE**
   - 근거: 독립적으로 개발 가능한 단위가 명확히 분리됨 (프론트엔드, 백엔드 API, Chrome Extension, 인프라/Lambda). 병렬 개발 및 단계적 구현을 위해 Unit 분리 필요.
 
@@ -105,7 +105,7 @@
 - [ ] **NFR Design** — **EXECUTE**
   - 근거: NFR Requirements 실행 예정이므로 NFR 패턴을 설계에 반영.
 - [ ] **Infrastructure Design** — **EXECUTE**
-  - 근거: ECS/Fargate, Aurora Serverless v2, EventBridge Scheduler, SQS, Lambda, Cognito, S3, CloudFront 등 복잡한 AWS 인프라 매핑 필요. IaC(CDK 또는 Terraform) 구조 결정 필요.
+  - 근거: ECS/Fargate, Aurora Serverless v2, Cognito, S3, CloudFront 등 AWS 인프라 매핑 필요. IaC(CDK 또는 Terraform) 구조 결정 필요.
 - [ ] **Code Generation** — **EXECUTE** (ALWAYS)
   - Part 1: 코드 생성 계획 수립
   - Part 2: 코드 생성 실행
@@ -128,11 +128,10 @@ Units Generation 단계에서 아래와 같이 분리될 것으로 예상:
 
 | Unit | 설명 | 주요 기술 |
 |------|------|-----------|
-| **Unit 1: 인프라 (IaC)** | AWS 리소스 프로비저닝 | CDK/Terraform, ECS, Aurora, Cognito, S3, EventBridge, SQS |
+| **Unit 1: 인프라 (IaC)** | AWS 리소스 프로비저닝 | CDK/Terraform, ECS, Aurora, Cognito, S3, CloudFront |
 | **Unit 2: 백엔드 API** | Next.js API Routes, DB 스키마, 비즈니스 로직 | Next.js, Prisma/Drizzle, PostgreSQL |
 | **Unit 3: 프론트엔드** | 웹 앱 UI (인박스, 그룹, 컬렉션, 검색, 공유 페이지) | Next.js, React, TailwindCSS |
 | **Unit 4: Chrome Extension** | MV3 Extension 팝업, Cognito 인증 | React, MV3, chrome.topSites |
-| **Unit 5: Lambda Worker** | 링크 상태 체크 배치 처리 | Node.js Lambda, SQS |
 
 ---
 
