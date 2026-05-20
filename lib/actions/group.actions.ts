@@ -111,7 +111,15 @@ export async function reorderBookmarksAction(
 
 export async function convertToCollectionAction(
   groupId: string,
-  data: { bookmarkIds: string[]; collection: { name: string; template: 'guide' | 'profile' } }
+  data: {
+    bookmarkIds: string[]
+    collection: {
+      name: string
+      emoji?: string | null
+      description?: string | null
+      template: 'guide' | 'profile'
+    }
+  }
 ): Promise<ActionResult & { collectionId?: string }> {
   const parsed = ConvertToCollectionSchema.safeParse(data)
   if (!parsed.success) return { success: false, error: parsed.error.errors[0]?.message }

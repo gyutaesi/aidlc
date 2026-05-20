@@ -4,7 +4,6 @@ import { getMessages } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import { routing } from '@/lib/i18n/routing'
 import { ToastProvider } from '@/components/ui/toast-provider'
-import '@/app/globals.css'
 
 export const metadata: Metadata = {
   title: 'moaring',

@@ -5,20 +5,29 @@ import { routing } from './lib/i18n/routing'
 
 const intlMiddleware = createMiddleware(routing)
 
-// JWKS 캐싱 — 모듈 레벨에서 한 번만 초기화
-const JWKS = createRemoteJWKSet(
-  new URL(
-    `https://cognito-idp.us-east-1.amazonaws.com/${process.env.COGNITO_USER_POOL_ID}/.well-known/jwks.json`
-  )
-)
+const IS_LOCAL_DEV = process.env.LOCAL_DEV_BYPASS_AUTH === 'true'
+
+// JWKS 캐싱 — 프로덕션에서만 초기화
+const JWKS = IS_LOCAL_DEV
+  ? null
+  : createRemoteJWKSet(
+      new URL(
+        `https://cognito-idp.${process.env.COGNITO_REGION ?? 'us-east-1'}.amazonaws.com/${process.env.COGNITO_USER_POOL_ID}/.well-known/jwks.json`
+      )
+    )
 
 const PUBLIC_PATHS = ['/c/', '/api/health']
 const AUTH_PATHS = ['/login', '/signup', '/verify']
 
 async function verifyToken(token: string): Promise<boolean> {
+  // 로컬 개발 모드: local-dev- 접두사 토큰 허용
+  if (IS_LOCAL_DEV && token.startsWith('local-dev-')) {
+    return true
+  }
+  if (!JWKS) return false
   try {
     await jwtVerify(token, JWKS, {
-      issuer: `https://cognito-idp.us-east-1.amazonaws.com/${process.env.COGNITO_USER_POOL_ID}`,
+      issuer: `https://cognito-idp.${process.env.COGNITO_REGION ?? 'us-east-1'}.amazonaws.com/${process.env.COGNITO_USER_POOL_ID}`,
     })
     return true
   } catch {
@@ -71,15 +80,12 @@ export async function middleware(request: NextRequest) {
   const isValid = await verifyToken(token)
 
   if (!isValid) {
-    // Refresh Token으로 갱신 시도
     const refreshToken = request.cookies.get('refresh_token')?.value
     if (!refreshToken) {
       const loginUrl = new URL(`/${routing.defaultLocale}/login`, request.url)
       return NextResponse.redirect(loginUrl)
     }
 
-    // Refresh Token 갱신은 Server Action에서 처리
-    // Middleware에서는 만료된 토큰으로 로그인 페이지로 리다이렉트
     const loginUrl = new URL(`/${routing.defaultLocale}/login`, request.url)
     loginUrl.searchParams.set('refresh', '1')
     return NextResponse.redirect(loginUrl)

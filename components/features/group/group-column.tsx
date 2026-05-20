@@ -13,18 +13,24 @@ import type { GroupWithBookmarks } from '@/lib/services/group.service'
 
 interface GroupColumnProps {
   group: GroupWithBookmarks
+  allGroups: GroupWithBookmarks[]
   onAddBookmark: (groupId: string) => void
   onEdit: (group: GroupWithBookmarks) => void
   onDelete: (groupId: string) => void
-  onConvertToCollection: (groupId: string) => void
+  onConvertToCollection: (group: GroupWithBookmarks) => void
+  onMoveBookmarkToGroup: (bookmarkId: string, targetGroupId: string, sourceGroupId: string) => void
+  onMoveBookmarkToInbox: (bookmarkId: string, groupId: string) => void
 }
 
 export function GroupColumn({
   group,
+  allGroups,
   onAddBookmark,
   onEdit,
   onDelete,
   onConvertToCollection,
+  onMoveBookmarkToGroup,
+  onMoveBookmarkToInbox,
 }: GroupColumnProps) {
   const t = useTranslations('group')
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -46,7 +52,7 @@ export function GroupColumn({
 
   return (
     <div
-      className="bg-card flex h-full w-[280px] flex-shrink-0 flex-col rounded-lg border"
+      className="flex h-full w-[280px] flex-shrink-0 flex-col rounded-lg border bg-card"
       data-testid={`group-column-${group.id}`}
     >
       {/* 헤더 */}
@@ -56,7 +62,7 @@ export function GroupColumn({
           <h3 className="text-sm font-medium" data-testid={`group-name-${group.id}`}>
             {group.name}
           </h3>
-          <span className="text-muted-foreground text-xs">({group.bookmarks.length})</span>
+          <span className="text-xs text-muted-foreground">({group.bookmarks.length})</span>
         </div>
 
         <div className="relative">
@@ -71,9 +77,9 @@ export function GroupColumn({
           </Button>
 
           {isMenuOpen && (
-            <div className="bg-popover absolute right-0 z-50 mt-1 min-w-[160px] rounded-md border p-1 shadow-md">
+            <div className="absolute right-0 z-50 mt-1 min-w-[160px] rounded-md border bg-popover p-1 shadow-md">
               <button
-                className="hover:bg-accent flex w-full items-center rounded-sm px-2 py-1.5 text-sm"
+                className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
                 onClick={() => {
                   onEdit(group)
                   setIsMenuOpen(false)
@@ -84,9 +90,9 @@ export function GroupColumn({
                 {t('edit')}
               </button>
               <button
-                className="hover:bg-accent flex w-full items-center rounded-sm px-2 py-1.5 text-sm"
+                className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
                 onClick={() => {
-                  onConvertToCollection(group.id)
+                  onConvertToCollection(group)
                   setIsMenuOpen(false)
                 }}
                 data-testid={`group-convert-${group.id}`}
@@ -94,9 +100,9 @@ export function GroupColumn({
                 <ArrowRight className="mr-2 h-4 w-4" />
                 {t('convertToCollection')}
               </button>
-              <div className="bg-muted my-1 h-px" />
+              <div className="my-1 h-px bg-muted" />
               <button
-                className="text-destructive hover:bg-accent flex w-full items-center rounded-sm px-2 py-1.5 text-sm"
+                className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm text-destructive hover:bg-accent"
                 onClick={() => {
                   onDelete(group.id)
                   setIsMenuOpen(false)
@@ -115,7 +121,7 @@ export function GroupColumn({
       <div className="flex-1 overflow-y-auto p-2">
         {group.bookmarks.length === 0 ? (
           <p
-            className="text-muted-foreground py-4 text-center text-xs"
+            className="py-4 text-center text-xs text-muted-foreground"
             data-testid={`group-empty-${group.id}`}
           >
             {t('empty')}
@@ -127,9 +133,14 @@ export function GroupColumn({
             renderItem={(bookmark) => (
               <GroupBookmarkItem
                 bookmark={bookmark}
+                currentGroupId={group.id}
+                allGroups={allGroups}
                 onOpenUrl={handleOpenUrl}
                 onDelete={handleDeleteBookmark}
-                onMoveToInbox={(id) => handleDeleteBookmark(id)}
+                onMoveToInbox={(id) => onMoveBookmarkToInbox(id, group.id)}
+                onMoveToGroup={(bookmarkId, targetGroupId) =>
+                  onMoveBookmarkToGroup(bookmarkId, targetGroupId, group.id)
+                }
               />
             )}
           />
@@ -141,7 +152,7 @@ export function GroupColumn({
         <Button
           variant="ghost"
           size="sm"
-          className="text-muted-foreground w-full justify-start"
+          className="w-full justify-start text-muted-foreground"
           onClick={() => onAddBookmark(group.id)}
           data-testid={`group-add-link-${group.id}`}
         >

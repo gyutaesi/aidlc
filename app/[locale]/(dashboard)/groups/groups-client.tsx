@@ -1,13 +1,17 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { GroupColumn } from '@/components/features/group/group-column'
+import { GroupFormModal } from '@/components/features/group/group-form-modal'
+import { ConvertToCollectionModal } from '@/components/features/group/convert-to-collection-modal'
 import { BookmarkSaveModal } from '@/components/features/bookmark/bookmark-save-modal'
 import { deleteGroupAction } from '@/lib/actions/group.actions'
+import { moveToGroupAction, removeFromGroupAction } from '@/lib/actions/bookmark.actions'
 import type { GroupWithBookmarks } from '@/lib/services/group.service'
 
 interface GroupDashboardClientProps {
@@ -16,13 +20,29 @@ interface GroupDashboardClientProps {
 
 export function GroupDashboardClient({ initialGroups }: GroupDashboardClientProps) {
   const t = useTranslations('group')
+  const router = useRouter()
   const [groups, setGroups] = useState(initialGroups)
+
+  // 모달 상태
   const [saveModalOpen, setSaveModalOpen] = useState(false)
   const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>()
+  const [groupFormOpen, setGroupFormOpen] = useState(false)
+  const [editTarget, setEditTarget] = useState<GroupWithBookmarks | null>(null)
+  const [convertTarget, setConvertTarget] = useState<GroupWithBookmarks | null>(null)
 
   function handleAddBookmark(groupId: string) {
     setSelectedGroupId(groupId)
     setSaveModalOpen(true)
+  }
+
+  function handleCreateGroup() {
+    setEditTarget(null)
+    setGroupFormOpen(true)
+  }
+
+  function handleEditGroup(group: GroupWithBookmarks) {
+    setEditTarget(group)
+    setGroupFormOpen(true)
   }
 
   async function handleDeleteGroup(groupId: string) {
@@ -35,6 +55,38 @@ export function GroupDashboardClient({ initialGroups }: GroupDashboardClientProp
     }
   }
 
+  function handleConvertToCollection(group: GroupWithBookmarks) {
+    setConvertTarget(group)
+  }
+
+  async function handleMoveBookmarkToGroup(
+    bookmarkId: string,
+    targetGroupId: string,
+    _sourceGroupId: string
+  ) {
+    const result = await moveToGroupAction(bookmarkId, targetGroupId)
+    if (result.success) {
+      toast.success('다른 그룹으로 이동됐습니다')
+      router.refresh()
+    } else {
+      toast.error(result.error ?? '이동에 실패했습니다')
+    }
+  }
+
+  async function handleMoveBookmarkToInbox(bookmarkId: string, groupId: string) {
+    const result = await removeFromGroupAction(bookmarkId, groupId)
+    if (result.success) {
+      setGroups((prev) =>
+        prev.map((g) =>
+          g.id === groupId ? { ...g, bookmarks: g.bookmarks.filter((b) => b.id !== bookmarkId) } : g
+        )
+      )
+      toast.success('인박스로 이동됐습니다')
+    } else {
+      toast.error(result.error ?? '이동에 실패했습니다')
+    }
+  }
+
   return (
     <>
       {/* 데스크탑: 가로 스크롤 컬럼 */}
@@ -43,17 +95,20 @@ export function GroupDashboardClient({ initialGroups }: GroupDashboardClientProp
           <GroupColumn
             key={group.id}
             group={group}
+            allGroups={groups}
             onAddBookmark={handleAddBookmark}
-            onEdit={(_g) => toast.info('그룹 편집')}
+            onEdit={handleEditGroup}
             onDelete={handleDeleteGroup}
-            onConvertToCollection={(_id) => toast.info('컬렉션 변환')}
+            onConvertToCollection={handleConvertToCollection}
+            onMoveBookmarkToGroup={handleMoveBookmarkToGroup}
+            onMoveBookmarkToInbox={handleMoveBookmarkToInbox}
           />
         ))}
 
         <Button
           variant="outline"
           className="h-auto w-[280px] flex-shrink-0 flex-col gap-2 py-8"
-          onClick={() => toast.info('그룹 생성')}
+          onClick={handleCreateGroup}
           data-testid="create-group-button"
         >
           <Plus className="h-6 w-6" />
@@ -61,7 +116,7 @@ export function GroupDashboardClient({ initialGroups }: GroupDashboardClientProp
         </Button>
       </div>
 
-      {/* 모바일: 세로 스택 (accordion) */}
+      {/* 모바일: 세로 스택 */}
       <div className="flex-1 space-y-2 overflow-y-auto p-4 md:hidden" data-testid="groups-mobile">
         {groups.map((group) => (
           <details
@@ -72,7 +127,7 @@ export function GroupDashboardClient({ initialGroups }: GroupDashboardClientProp
             <summary className="flex cursor-pointer items-center gap-2 px-4 py-3 font-medium">
               {group.emoji && <span>{group.emoji}</span>}
               {group.name}
-              <span className="text-muted-foreground ml-auto text-sm">
+              <span className="ml-auto text-sm text-muted-foreground">
                 ({group.bookmarks.length})
               </span>
             </summary>
@@ -85,12 +140,30 @@ export function GroupDashboardClient({ initialGroups }: GroupDashboardClientProp
             </div>
           </details>
         ))}
+        <Button variant="outline" className="w-full" onClick={handleCreateGroup}>
+          <Plus className="mr-2 h-4 w-4" />
+          {t('create')}
+        </Button>
       </div>
 
+      {/* 모달들 */}
       <BookmarkSaveModal
         open={saveModalOpen}
         onOpenChange={setSaveModalOpen}
         defaultGroupId={selectedGroupId}
+      />
+      <GroupFormModal
+        open={groupFormOpen}
+        onOpenChange={setGroupFormOpen}
+        editTarget={editTarget}
+        onSuccess={() => router.refresh()}
+      />
+      <ConvertToCollectionModal
+        open={convertTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setConvertTarget(null)
+        }}
+        group={convertTarget}
       />
     </>
   )

@@ -10,6 +10,7 @@ import {
   ChangePasswordSchema,
 } from '@/lib/schemas/auth.schema'
 import { logger } from '@/lib/logger'
+import { isLocalDevBypass } from '@/lib/env'
 
 export interface ActionResult {
   success: boolean
@@ -81,6 +82,27 @@ export async function signInAction(formData: FormData): Promise<ActionResult> {
   const parsed = SignInSchema.safeParse(raw)
   if (!parsed.success) {
     return { success: false, error: parsed.error.errors[0]?.message }
+  }
+
+  // 로컬 개발 모드: Cognito 없이 즉시 로그인 토큰 발급
+  if (isLocalDevBypass) {
+    const cookieStore = await cookies()
+    const devToken = `local-dev-${Date.now()}`
+    cookieStore.set('access_token', devToken, {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'lax',
+      maxAge: 86400, // 24시간
+      path: '/',
+    })
+    cookieStore.set('refresh_token', `local-dev-refresh-${Date.now()}`, {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'lax',
+      maxAge: 2592000,
+      path: '/',
+    })
+    return { success: true }
   }
 
   try {

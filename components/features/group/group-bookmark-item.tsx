@@ -1,22 +1,32 @@
 'use client'
 
-import { ExternalLink, Trash2, MoveRight } from 'lucide-react'
+import { useState } from 'react'
+import { ExternalLink, Trash2, MoveRight, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { BookmarkWithTags } from '@/lib/services/bookmark.service'
+import type { GroupWithBookmarks } from '@/lib/services/group.service'
 
 interface GroupBookmarkItemProps {
   bookmark: BookmarkWithTags
+  currentGroupId: string
+  allGroups: GroupWithBookmarks[]
   onOpenUrl: (url: string, id: string) => void
   onDelete: (id: string) => void
   onMoveToInbox: (id: string) => void
+  onMoveToGroup: (bookmarkId: string, groupId: string) => void
 }
 
 export function GroupBookmarkItem({
   bookmark,
+  currentGroupId,
+  allGroups,
   onOpenUrl,
   onDelete,
   onMoveToInbox,
+  onMoveToGroup,
 }: GroupBookmarkItemProps) {
+  const [moveMenuOpen, setMoveMenuOpen] = useState(false)
+
   const domain = (() => {
     try {
       return new URL(bookmark.url).hostname
@@ -25,9 +35,11 @@ export function GroupBookmarkItem({
     }
   })()
 
+  const otherGroups = allGroups.filter((g) => g.id !== currentGroupId)
+
   return (
     <div
-      className="hover:bg-accent group flex items-center gap-2 rounded-md px-2 py-1.5"
+      className="group relative flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent"
       data-testid={`group-bookmark-item-${bookmark.id}`}
     >
       {/* 파비콘 */}
@@ -60,20 +72,62 @@ export function GroupBookmarkItem({
         >
           <ExternalLink className="h-3 w-3" />
         </Button>
+
+        {/* 이동 메뉴 */}
+        <div className="relative">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={() => setMoveMenuOpen((v) => !v)}
+            title="이동"
+            data-testid={`group-bookmark-move-${bookmark.id}`}
+          >
+            <MoveRight className="h-3 w-3" />
+          </Button>
+
+          {moveMenuOpen && (
+            <div className="absolute right-0 z-50 mt-1 min-w-[160px] rounded-md border bg-popover p-1 shadow-md">
+              <p className="px-2 py-1 text-xs font-medium text-muted-foreground">이동할 곳</p>
+
+              <button
+                className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
+                onClick={() => {
+                  onMoveToInbox(bookmark.id)
+                  setMoveMenuOpen(false)
+                }}
+                data-testid={`group-bookmark-to-inbox-${bookmark.id}`}
+              >
+                📥 인박스
+              </button>
+
+              {otherGroups.length > 0 && (
+                <>
+                  <div className="my-1 h-px bg-muted" />
+                  {otherGroups.map((g) => (
+                    <button
+                      key={g.id}
+                      className="flex w-full items-center gap-1 rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
+                      onClick={() => {
+                        onMoveToGroup(bookmark.id, g.id)
+                        setMoveMenuOpen(false)
+                      }}
+                    >
+                      <ChevronRight className="h-3 w-3 flex-shrink-0" />
+                      {g.emoji && <span>{g.emoji}</span>}
+                      <span className="truncate">{g.name}</span>
+                    </button>
+                  ))}
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
         <Button
           variant="ghost"
           size="icon"
-          className="h-6 w-6"
-          onClick={() => onMoveToInbox(bookmark.id)}
-          title="인박스로 이동"
-          data-testid={`group-bookmark-to-inbox-${bookmark.id}`}
-        >
-          <MoveRight className="h-3 w-3" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-destructive hover:text-destructive h-6 w-6"
+          className="h-6 w-6 text-destructive hover:text-destructive"
           onClick={() => onDelete(bookmark.id)}
           title="삭제"
           data-testid={`group-bookmark-delete-${bookmark.id}`}

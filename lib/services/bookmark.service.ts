@@ -177,6 +177,16 @@ export class BookmarkService {
   }
 
   /**
+   * 북마크를 특정 그룹에서 제거 (인박스로 이동)
+   */
+  async removeFromGroup(userId: string, bookmarkId: string, groupId: string): Promise<void> {
+    await this.getById(userId, bookmarkId)
+    await prisma.bookmarkGroup.deleteMany({
+      where: { bookmarkId, groupId },
+    })
+  }
+
+  /**
    * 인박스 목록 조회 (어떤 그룹에도 미소속인 북마크)
    */
   async getInbox(

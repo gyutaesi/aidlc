@@ -138,6 +138,24 @@ export async function moveToGroupAction(
 }
 
 /**
+ * 그룹에서 제거 (인박스로 이동)
+ */
+export async function removeFromGroupAction(
+  bookmarkId: string,
+  groupId: string
+): Promise<ActionResult> {
+  try {
+    const user = await getCurrentUser()
+    await bookmarkService.removeFromGroup(user.id, bookmarkId, groupId)
+    revalidatePath('/[locale]/(dashboard)/inbox', 'page')
+    revalidatePath('/[locale]/(dashboard)/groups', 'page')
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : '이동에 실패했습니다' }
+  }
+}
+
+/**
  * 크롬 북마크 HTML Import
  */
 export async function importBookmarksAction(

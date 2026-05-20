@@ -9,6 +9,7 @@ import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { AddBlockButton } from './add-block-button'
+import { BlockAddModal } from './block-add-modal'
 import { deleteBlockAction, reorderBlocksAction } from '@/lib/actions/collection.actions'
 import type { Block } from '@/lib/services/collection.service'
 
@@ -45,10 +46,10 @@ function LinkBlockItem({ block }: { block: Block }) {
             data-testid={`block-link-url-${block.id}`}
           >
             {content.title}
-            <ExternalLink className="text-muted-foreground h-3 w-3 flex-shrink-0" />
+            <ExternalLink className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
           </a>
           {content.description && (
-            <p className="text-muted-foreground mt-1 line-clamp-2 text-xs">{content.description}</p>
+            <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{content.description}</p>
           )}
           {content.tags && content.tags.length > 0 && (
             <div className="mt-1 flex flex-wrap gap-1">
@@ -88,7 +89,7 @@ function ImageBlockItem({ block }: { block: Block }) {
         alt={content.alt ?? ''}
         className="w-full rounded-md object-cover"
       />
-      {content.caption && <p className="text-muted-foreground mt-1 text-xs">{content.caption}</p>}
+      {content.caption && <p className="mt-1 text-xs text-muted-foreground">{content.caption}</p>}
     </div>
   )
 }
@@ -96,6 +97,7 @@ function ImageBlockItem({ block }: { block: Block }) {
 export function BlockList({ collectionId, blocks }: BlockListProps) {
   const t = useTranslations('collection')
   const [localBlocks, setLocalBlocks] = useState(blocks)
+  const [addingBlockType, setAddingBlockType] = useState<'link' | 'text' | 'image' | null>(null)
 
   async function handleReorder(orderedIds: string[]) {
     const reordered = orderedIds.map((id, i) => {
@@ -120,14 +122,10 @@ export function BlockList({ collectionId, blocks }: BlockListProps) {
     }
   }
 
-  function handleAddBlock(type: 'link' | 'text' | 'image') {
-    toast.info(`${type} 블록 추가 기능`)
-  }
-
   return (
     <div className="space-y-4" data-testid="block-list">
       {localBlocks.length === 0 ? (
-        <div className="text-muted-foreground py-8 text-center" data-testid="block-list-empty">
+        <div className="py-8 text-center text-muted-foreground" data-testid="block-list-empty">
           <p className="text-sm">{t('empty')}</p>
           <p className="text-xs">{t('emptyDescription')}</p>
         </div>
@@ -155,7 +153,14 @@ export function BlockList({ collectionId, blocks }: BlockListProps) {
         />
       )}
 
-      <AddBlockButton onSelectType={handleAddBlock} />
+      <AddBlockButton onSelectType={setAddingBlockType} />
+
+      <BlockAddModal
+        collectionId={collectionId}
+        blockType={addingBlockType}
+        onClose={() => setAddingBlockType(null)}
+        onSuccess={() => setAddingBlockType(null)}
+      />
     </div>
   )
 }

@@ -22,15 +22,11 @@
     "service_worker": "src/service-worker.ts",
     "type": "module"
   },
-  "permissions": [
-    "storage",
-    "identity",
-    "tabs",
-    "topSites"
-  ],
+  "permissions": ["storage", "identity", "tabs", "topSites"],
   "host_permissions": [
     "https://api.moaring.com/*",
-    "https://*.amazoncognito.com/*"
+    "https://*.amazoncognito.com/*",
+    "http://localhost:3000/*"
   ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"

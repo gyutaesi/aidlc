@@ -9,19 +9,21 @@ import {
 } from '@aws-sdk/client-cognito-identity-provider'
 import { jwtVerify, createRemoteJWKSet } from 'jose'
 import { prisma } from '@/lib/prisma'
-import { env } from '@/lib/env'
+import { env, isLocalDevBypass } from '@/lib/env'
 import { NotFoundError, UnauthorizedError } from '@/lib/errors'
 import { logger } from '@/lib/logger'
 import type { User } from '@prisma/client'
 
 const cognitoClient = new CognitoIdentityProviderClient({ region: env.COGNITO_REGION })
 
-// JWKS 캐싱 — 모듈 레벨에서 한 번만 초기화
-const JWKS = createRemoteJWKSet(
-  new URL(
-    `https://cognito-idp.${env.COGNITO_REGION}.amazonaws.com/${env.COGNITO_USER_POOL_ID}/.well-known/jwks.json`
-  )
-)
+// JWKS 캐싱 — 로컬 개발 모드에서는 초기화 불필요
+const JWKS = isLocalDevBypass
+  ? null
+  : createRemoteJWKSet(
+      new URL(
+        `https://cognito-idp.${env.COGNITO_REGION}.amazonaws.com/${env.COGNITO_USER_POOL_ID}/.well-known/jwks.json`
+      )
+    )
 
 export interface AuthTokens {
   accessToken: string
@@ -35,6 +37,19 @@ export class AuthService {
    * Route Handler에서 사용 (Node.js Runtime)
    */
   async getUserFromToken(token: string): Promise<User> {
+    // 로컬 개발 모드: local-dev- 접두사 토큰 → 개발용 사용자 자동 생성/조회
+    if (isLocalDevBypass && token.startsWith('local-dev-')) {
+      const email = process.env.LOCAL_DEV_USER_EMAIL ?? 'dev@moaring.local'
+      const cognitoSub = 'local-dev-sub'
+      return prisma.user.upsert({
+        where: { cognitoSub },
+        create: { cognitoSub, email },
+        update: {},
+      })
+    }
+
+    if (!JWKS) throw new UnauthorizedError('Auth not configured')
+
     try {
       const { payload } = await jwtVerify(token, JWKS, {
         issuer: `https://cognito-idp.${env.COGNITO_REGION}.amazonaws.com/${env.COGNITO_USER_POOL_ID}`,
