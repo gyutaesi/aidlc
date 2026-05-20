@@ -138,40 +138,7 @@ interface AppStore {
 
 ---
 
-### 6. axios 채택 (fetch 미사용)
-
-**선택 이유**:
-- `api-client.ts`에서 구현해야 할 로직: 타임아웃, 401 토큰 갱신 재시도, GET 1회 재시도, 오프라인 감지, 에러 표준화, Mock 분기
-- fetch로 직접 구현 시 `api-client.ts`가 복잡한 래퍼로 비대해짐
-- axios 인터셉터로 토큰 갱신(request interceptor)과 재시도(response interceptor) 로직을 깔끔하게 분리 가능
-- 타임아웃을 `timeout: 3000` 옵션 하나로 처리 (fetch는 AbortController + setTimeout 조합 필요)
-- ~13KB gzip — 1MB 번들 제한의 1.3%, 구현 복잡도 감소 효과가 훨씬 큼
-
-**인터셉터 구조**:
-```typescript
-// api-client.ts
-const client = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
-  timeout: 3000,
-})
-
-// Request: 토큰 자동 첨부
-client.interceptors.request.use(async (config) => {
-  const token = await AuthManager.getValidToken()
-  if (token) config.headers.Authorization = `Bearer ${token}`
-  return config
-})
-
-// Response: 401 시 토큰 갱신 후 재시도
-client.interceptors.response.use(null, async (error) => {
-  if (error.response?.status === 401 && !error.config._retry) {
-    error.config._retry = true
-    await AuthManager.refreshToken()
-    return client(error.config)
-  }
-  throw error
-})
-```
+### 5. npm 선택 (패키지 매니저)
 
 **선택 이유**: 모노레포 루트와 동일한 패키지 매니저 사용으로 일관성 유지
 
@@ -184,6 +151,27 @@ client.interceptors.response.use(null, async (error) => {
     "infra"
   ]
 }
+```
+
+---
+
+### 6. axios 채택 (fetch 미사용)
+
+**선택 이유**:
+- `api-client.ts`에서 구현해야 할 로직: 타임아웃, 401 토큰 갱신 재시도, GET 1회 재시도, 오프라인 감지, 에러 표준화, Mock 분기
+- fetch로 직접 구현 시 `api-client.ts`가 복잡한 래퍼로 비대해짐
+- axios 인터셉터로 토큰 갱신(request interceptor)과 재시도(response interceptor) 로직을 깔끔하게 분리 가능
+- 타임아웃을 `timeout: 3000` 옵션 하나로 처리 (fetch는 AbortController + setTimeout 조합 필요)
+- ~13KB gzip — 1MB 번들 제한의 1.3%, 구현 복잡도 감소 효과가 훨씬 큼
+
+**인터셉터 구조** (상세는 nfr-design-patterns.md 참조):
+```typescript
+const client = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+  timeout: 3000,
+})
+// request: 오프라인 감지 + 토큰 첨부
+// response: 401 토큰 갱신(_retryAuth) + GET 재시도(_retryNetwork) — 플래그 분리
 ```
 
 ---

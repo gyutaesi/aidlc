@@ -35,12 +35,20 @@ GET과 POST를 axios response interceptor에서 메서드로 분기하여 처리
 // 재시도 유틸리티
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
+// _retry 플래그를 목적별로 분리하여 충돌 방지
+// _retryAuth: 401 토큰 갱신 재시도 여부
+// _retryNetwork: 네트워크/5xx 재시도 여부
+type RetryConfig = AxiosRequestConfig & {
+  _retryAuth?: boolean
+  _retryNetwork?: boolean
+}
+
 client.interceptors.response.use(null, async (error: AxiosError) => {
-  const config = error.config as AxiosRequestConfig & { _retry?: boolean; _retryCount?: number }
+  const config = error.config as RetryConfig
 
   // 401: 토큰 갱신 후 재시도 (GET/POST 공통, 1회만)
-  if (error.response?.status === 401 && !config._retry) {
-    config._retry = true
+  if (error.response?.status === 401 && !config._retryAuth) {
+    config._retryAuth = true
     const newToken = await AuthManager.refreshToken()
     if (newToken) {
       config.headers!['Authorization'] = `Bearer ${newToken}`
@@ -51,11 +59,11 @@ client.interceptors.response.use(null, async (error: AxiosError) => {
     throw error
   }
 
-  // 네트워크 에러 / 5xx: GET만 1회 재시도
+  // 네트워크 에러 / 5xx: GET만 1회 재시도 (401 재시도와 독립적)
   const isRetryable = !error.response || error.response.status >= 500
   const isGet = config.method?.toUpperCase() === 'GET'
-  if (isRetryable && isGet && !config._retry) {
-    config._retry = true
+  if (isRetryable && isGet && !config._retryNetwork) {
+    config._retryNetwork = true
     await delay(500)
     return client(config)
   }
@@ -237,23 +245,58 @@ Vite production 빌드
 
 ### 3.2 OAuth PKCE 패턴 (SEC-03)
 
-`chrome.identity.launchWebAuthFlow`는 내부적으로 PKCE를 지원한다. Cognito Hosted UI와 연동 시 Authorization Code + PKCE 플로우를 사용한다.
+`chrome.identity.launchWebAuthFlow`는 Authorization Code를 받아오는 역할만 담당한다.
+PKCE의 `code_challenge` 생성과 `code_verifier` 교환은 AuthManager가 직접 구현해야 한다.
 
 ```
-Extension                    Cognito Hosted UI
-    │                               │
-    │── launchWebAuthFlow() ────────►│
-    │   (code_challenge 포함)        │
-    │                               │
-    │◄── redirect with auth_code ───│
-    │    (chromiumapp.org로 리다이렉트)│
-    │                               │
-    │── Token Endpoint POST ────────►│
-    │   (code + code_verifier)      │
-    │                               │
-    │◄── { access, refresh, id } ───│
-    │                               │
-    │── chrome.storage.local 저장   │
+Extension (AuthManager)              Cognito Hosted UI
+    │                                       │
+    │  1. code_verifier 생성 (random 43-128자)
+    │  2. code_challenge = BASE64URL(SHA256(verifier))
+    │                                       │
+    │── launchWebAuthFlow(url with          │
+    │   code_challenge, method=S256) ──────►│
+    │                                       │
+    │◄── redirect with auth_code ───────────│
+    │    (chromiumapp.org로 리다이렉트)      │
+    │                                       │
+    │── Token Endpoint POST ────────────────►│
+    │   { code, code_verifier,              │
+    │     redirect_uri, grant_type }        │
+    │                                       │
+    │◄── { access_token, refresh_token,     │
+    │      id_token, expires_in } ──────────│
+    │                                       │
+    │── chrome.storage.local 저장           │
+```
+
+**AuthManager PKCE 구현 책임**:
+```typescript
+// AuthManager.login() 내부
+async login(): Promise<AuthState> {
+  // 1. PKCE 파라미터 생성 (AuthManager 직접 구현)
+  const codeVerifier = generateCodeVerifier()        // crypto.getRandomValues
+  const codeChallenge = await generateCodeChallenge(codeVerifier)  // SHA-256
+
+  // 2. Cognito 인증 URL 구성
+  const authUrl = buildCognitoAuthUrl({ codeChallenge, method: 'S256' })
+
+  // 3. launchWebAuthFlow로 Authorization Code 획득
+  const redirectUrl = await chrome.identity.launchWebAuthFlow({
+    url: authUrl,
+    interactive: true,
+  })
+
+  // 4. redirect URL에서 auth_code 추출
+  const code = extractCodeFromUrl(redirectUrl)
+
+  // 5. Token Endpoint에서 토큰 교환 (code_verifier 사용)
+  const tokens = await exchangeCodeForTokens(code, codeVerifier)
+
+  // 6. chrome.storage.local 저장
+  await saveAuthState(tokens)
+  return tokens
+}
 ```
 
 ---

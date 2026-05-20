@@ -57,11 +57,29 @@ interface AppStore {
   groups: Group[]
   setGroups: (groups: Group[]) => void
 
-  // 토스트 알림
+  // 토스트 알림 (3초 자동 소멸 — showToast 내부에서 setTimeout으로 처리)
   toast: Toast | null
-  showToast: (message: string, type: ToastType) => void
+  showToast: (message: string, type: ToastType) => void  // 내부에서 3초 후 clearToast 자동 호출
   clearToast: () => void
 }
+```
+
+```typescript
+// store/useAppStore.ts
+const useAppStore = create<AppStore>((set, get) => ({
+  // ...
+  showToast: (message, type) => {
+    set({ toast: { message, type } })
+    // 3초 후 자동 소멸 (UX-04) — Toast 컴포넌트가 아닌 store에서 관리
+    setTimeout(() => {
+      // 현재 토스트가 동일한 메시지일 때만 소멸 (연속 토스트 방지)
+      if (get().toast?.message === message) {
+        set({ toast: null })
+      }
+    }, 3000)
+  },
+  clearToast: () => set({ toast: null }),
+}))
 ```
 
 **의존 관계**:
@@ -255,10 +273,14 @@ SavedUrlCache
 ```
 App mount
   → AuthManager.getAuthState()
-  → 로그인 상태면 Promise.all([
-      ApiClient.getGroups() → AppStore.setGroups(),
-      SavedUrlCache.get() || ApiClient.getSavedUrls() → AppStore.setSavedUrls()
+  → 로그인 상태면 Promise.allSettled([
+      ApiClient.getGroups(),        // 실패해도 다른 초기화 계속 진행
+      SavedUrlCache.get() || ApiClient.getSavedUrls()
     ])
+    ├─ groups 성공 → AppStore.setGroups(groups)
+    ├─ groups 실패 → AppStore.setGroups([]) (드롭다운 빈 상태, 저장은 가능)
+    ├─ savedUrls 성공 → AppStore.setSavedUrls(urls)
+    └─ savedUrls 실패 → AppStore.setSavedUrls([]) (중복 감지 건너뜀, 저장 허용)
   → chrome.tabs.query() → BookmarkDraft 초기값 설정
   → 중복 감지: AppStore.savedUrls.includes(currentUrl)
 ```
