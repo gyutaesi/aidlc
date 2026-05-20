@@ -19,6 +19,7 @@ import { Config } from './config'
 export class AuthStack extends cdk.Stack {
   public readonly userPool: cognito.UserPool
   public readonly userPoolClient: cognito.UserPoolClient
+  public readonly userPoolDomain: cognito.UserPoolDomain
 
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props)
@@ -30,7 +31,7 @@ export class AuthStack extends cdk.Stack {
         email: true,
       },
       autoVerify: {
-        email: true,
+        email: false, // demo: 이메일 인증 비활성화
       },
       selfSignUpEnabled: true,
       standardAttributes: {
@@ -51,6 +52,13 @@ export class AuthStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY, // demo
     })
 
+    // Cognito Hosted UI 도메인 (Extension PKCE 플로우에 필요)
+    this.userPoolDomain = this.userPool.addDomain('Domain', {
+      cognitoDomain: {
+        domainPrefix: Config.projectName, // moaring.auth.us-east-1.amazoncognito.com
+      },
+    })
+
     // App Client (Secret 없음 — SPA/Extension용)
     this.userPoolClient = this.userPool.addClient('AppClient', {
       userPoolClientName: `${Config.projectName}-app-client`,
@@ -59,15 +67,19 @@ export class AuthStack extends cdk.Stack {
         userPassword: true,
         userSrp: true,
       },
-      accessTokenValidity: cdk.Duration.minutes(
-        Config.cognito.accessTokenValidityMinutes,
-      ),
-      idTokenValidity: cdk.Duration.minutes(
-        Config.cognito.idTokenValidityMinutes,
-      ),
-      refreshTokenValidity: cdk.Duration.days(
-        Config.cognito.refreshTokenValidityDays,
-      ),
+      oAuth: {
+        flows: {
+          authorizationCodeGrant: true, // Extension PKCE 플로우
+        },
+        scopes: [cognito.OAuthScope.OPENID, cognito.OAuthScope.EMAIL, cognito.OAuthScope.PROFILE],
+        // Chrome Extension redirect URI는 배포 후 수동 추가 필요
+        // chrome-extension://{extension-id}/ 형태
+        callbackUrls: ['http://localhost:3000/api/auth/callback'],
+        logoutUrls: ['http://localhost:3000/login'],
+      },
+      accessTokenValidity: cdk.Duration.minutes(Config.cognito.accessTokenValidityMinutes),
+      idTokenValidity: cdk.Duration.minutes(Config.cognito.idTokenValidityMinutes),
+      refreshTokenValidity: cdk.Duration.days(Config.cognito.refreshTokenValidityDays),
       preventUserExistenceErrors: true,
     })
 
@@ -77,6 +89,10 @@ export class AuthStack extends cdk.Stack {
     })
     new cdk.CfnOutput(this, 'UserPoolClientId', {
       value: this.userPoolClient.userPoolClientId,
+    })
+    new cdk.CfnOutput(this, 'CognitoDomain', {
+      value: this.userPoolDomain.domainName,
+      description: 'Cognito Hosted UI domain prefix (for Extension PKCE)',
     })
   }
 }

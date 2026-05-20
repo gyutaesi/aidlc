@@ -4,12 +4,19 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslations } from 'next-intl'
 import { Trash2, ExternalLink } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { DragDropList } from '@/components/ui/drag-drop-list'
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { AddBlockButton } from './add-block-button'
-import { deleteBlockAction, reorderBlocksAction } from '@/lib/actions/collection.actions'
+import {
+  addBlockAction,
+  deleteBlockAction,
+  reorderBlocksAction,
+} from '@/lib/actions/collection.actions'
 import type { Block } from '@/lib/services/collection.service'
 
 interface BlockListProps {
@@ -45,10 +52,10 @@ function LinkBlockItem({ block }: { block: Block }) {
             data-testid={`block-link-url-${block.id}`}
           >
             {content.title}
-            <ExternalLink className="text-muted-foreground h-3 w-3 flex-shrink-0" />
+            <ExternalLink className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
           </a>
           {content.description && (
-            <p className="text-muted-foreground mt-1 line-clamp-2 text-xs">{content.description}</p>
+            <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{content.description}</p>
           )}
           {content.tags && content.tags.length > 0 && (
             <div className="mt-1 flex flex-wrap gap-1">
@@ -88,7 +95,7 @@ function ImageBlockItem({ block }: { block: Block }) {
         alt={content.alt ?? ''}
         className="w-full rounded-md object-cover"
       />
-      {content.caption && <p className="text-muted-foreground mt-1 text-xs">{content.caption}</p>}
+      {content.caption && <p className="mt-1 text-xs text-muted-foreground">{content.caption}</p>}
     </div>
   )
 }
@@ -96,6 +103,14 @@ function ImageBlockItem({ block }: { block: Block }) {
 export function BlockList({ collectionId, blocks }: BlockListProps) {
   const t = useTranslations('collection')
   const [localBlocks, setLocalBlocks] = useState(blocks)
+  const [addModalType, setAddModalType] = useState<'link' | 'text' | 'image' | null>(null)
+  const [linkUrl, setLinkUrl] = useState('')
+  const [linkTitle, setLinkTitle] = useState('')
+  const [linkDescription, setLinkDescription] = useState('')
+  const [textMarkdown, setTextMarkdown] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
+  const [imageCaption, setImageCaption] = useState('')
+  const [isAdding, setIsAdding] = useState(false)
 
   async function handleReorder(orderedIds: string[]) {
     const reordered = orderedIds.map((id, i) => {
@@ -121,13 +136,72 @@ export function BlockList({ collectionId, blocks }: BlockListProps) {
   }
 
   function handleAddBlock(type: 'link' | 'text' | 'image') {
-    toast.info(`${type} 블록 추가 기능`)
+    setAddModalType(type)
+  }
+
+  function resetModal() {
+    setAddModalType(null)
+    setLinkUrl('')
+    setLinkTitle('')
+    setLinkDescription('')
+    setTextMarkdown('')
+    setImageUrl('')
+    setImageCaption('')
+  }
+
+  async function handleSubmitBlock() {
+    setIsAdding(true)
+    let data: unknown
+
+    if (addModalType === 'link') {
+      if (!linkUrl.trim() || !linkTitle.trim()) {
+        toast.error('URL과 제목은 필수입니다')
+        setIsAdding(false)
+        return
+      }
+      data = {
+        type: 'link',
+        content: {
+          url: linkUrl.trim(),
+          title: linkTitle.trim(),
+          description: linkDescription.trim() || null,
+          tags: [],
+        },
+      }
+    } else if (addModalType === 'text') {
+      if (!textMarkdown.trim()) {
+        toast.error('내용을 입력하세요')
+        setIsAdding(false)
+        return
+      }
+      data = { type: 'text', content: { markdown: textMarkdown.trim() } }
+    } else if (addModalType === 'image') {
+      if (!imageUrl.trim()) {
+        toast.error('이미지 URL을 입력하세요')
+        setIsAdding(false)
+        return
+      }
+      data = {
+        type: 'image',
+        content: { imageUrl: imageUrl.trim(), alt: null, caption: imageCaption.trim() || null },
+      }
+    }
+
+    const result = await addBlockAction(collectionId, data)
+    if (result.success) {
+      toast.success('블록이 추가되었습니다')
+      resetModal()
+      window.location.reload()
+    } else {
+      toast.error(result.error)
+    }
+    setIsAdding(false)
   }
 
   return (
     <div className="space-y-4" data-testid="block-list">
       {localBlocks.length === 0 ? (
-        <div className="text-muted-foreground py-8 text-center" data-testid="block-list-empty">
+        <div className="py-8 text-center text-muted-foreground" data-testid="block-list-empty">
           <p className="text-sm">{t('empty')}</p>
           <p className="text-xs">{t('emptyDescription')}</p>
         </div>
@@ -156,6 +230,93 @@ export function BlockList({ collectionId, blocks }: BlockListProps) {
       )}
 
       <AddBlockButton onSelectType={handleAddBlock} />
+
+      <Dialog
+        open={addModalType !== null}
+        onOpenChange={(open) => {
+          if (!open) resetModal()
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {addModalType === 'link' && t('blockTypeLink')}
+              {addModalType === 'text' && t('blockTypeText')}
+              {addModalType === 'image' && t('blockTypeImage')}
+              {' 블록 추가'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {addModalType === 'link' && (
+              <>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">URL</label>
+                  <Input
+                    value={linkUrl}
+                    onChange={(e) => setLinkUrl(e.target.value)}
+                    placeholder="https://example.com"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">제목</label>
+                  <Input
+                    value={linkTitle}
+                    onChange={(e) => setLinkTitle(e.target.value)}
+                    placeholder="링크 제목"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">설명 (선택)</label>
+                  <Input
+                    value={linkDescription}
+                    onChange={(e) => setLinkDescription(e.target.value)}
+                    placeholder="링크 설명"
+                  />
+                </div>
+              </>
+            )}
+            {addModalType === 'text' && (
+              <div className="space-y-1">
+                <label className="text-sm font-medium">내용 (마크다운)</label>
+                <Textarea
+                  value={textMarkdown}
+                  onChange={(e) => setTextMarkdown(e.target.value)}
+                  placeholder="마크다운으로 작성하세요..."
+                  rows={5}
+                />
+              </div>
+            )}
+            {addModalType === 'image' && (
+              <>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">이미지 URL</label>
+                  <Input
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    placeholder="https://example.com/image.png"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">캡션 (선택)</label>
+                  <Input
+                    value={imageCaption}
+                    onChange={(e) => setImageCaption(e.target.value)}
+                    placeholder="이미지 설명"
+                  />
+                </div>
+              </>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={resetModal}>
+                취소
+              </Button>
+              <Button onClick={handleSubmitBlock} disabled={isAdding}>
+                {isAdding ? '추가 중...' : '추가'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

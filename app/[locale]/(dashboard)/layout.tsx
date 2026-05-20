@@ -28,11 +28,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="flex h-screen overflow-hidden">
       {/* 사이드바 (데스크탑) */}
       <aside
-        className="bg-card hidden w-56 flex-shrink-0 flex-col border-r md:flex"
+        className="hidden w-56 flex-shrink-0 flex-col border-r md:flex"
+        style={{
+          background: '#EDEDE9',
+          borderRight: '1px solid #D6CCC2',
+        }}
         data-testid="sidebar"
       >
-        <div className="flex h-14 items-center border-b px-4">
-          <Link href={`/${locale}/inbox`} className="text-lg font-bold">
+        <div
+          className="flex h-14 items-center border-b px-4"
+          style={{ borderBottom: '1px solid #D6CCC2' }}
+        >
+          <Link href={`/${locale}/inbox`} className="gradient-text text-lg font-bold">
             moaring
           </Link>
         </div>
@@ -43,9 +50,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               key={href}
               href={href}
               className={cn(
-                'hover:bg-accent flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
-                pathname.startsWith(href) && 'bg-accent font-medium'
+                'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-300',
+                'hover:translate-x-1 hover:bg-[#D6CCC2]/40',
+                pathname.startsWith(href) ? 'font-semibold text-[#3d2e24]' : 'text-[#6b5b50]'
               )}
+              style={
+                pathname.startsWith(href)
+                  ? {
+                      background: 'linear-gradient(135deg, #D5BDAF, #E3D5CA)',
+                      boxShadow: '0 2px 8px rgba(213, 189, 175, 0.4)',
+                    }
+                  : undefined
+              }
               data-testid={`nav-${label}`}
             >
               <Icon className="h-4 w-4" />
@@ -60,10 +76,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* 헤더 */}
         <header
           className="flex h-14 items-center justify-between border-b px-4"
+          style={{
+            background: 'rgba(255, 255, 255, 0.6)',
+            backdropFilter: 'blur(10px)',
+            borderBottom: '1px solid #D6CCC2',
+          }}
           data-testid="header"
         >
           <div className="md:hidden">
-            <Link href={`/${locale}/inbox`} className="text-lg font-bold">
+            <Link href={`/${locale}/inbox`} className="gradient-text text-lg font-bold">
               moaring
             </Link>
           </div>
@@ -75,6 +96,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               onClick={() => setSearchModalOpen(true)}
               title="검색 (Cmd+K)"
               data-testid="header-search-button"
+              className="transition-all hover:bg-[#D6CCC2]/50"
             >
               <Search className="h-4 w-4" />
             </Button>
@@ -83,6 +105,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               size="sm"
               onClick={() => setSaveModalOpen(true)}
               data-testid="header-save-button"
+              className="glow-button font-semibold"
             >
               <Plus className="mr-2 h-4 w-4" />
               {t('newBookmark')}
@@ -91,19 +114,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* 콘텐츠 */}
-        <main className="flex-1 overflow-auto" data-testid="main-content">
+        <main className="custom-scrollbar flex-1 overflow-auto" data-testid="main-content">
           {children}
         </main>
 
         {/* 모바일 하단 탭 바 */}
-        <nav className="bg-card flex border-t md:hidden" data-testid="mobile-nav">
+        <nav
+          className="flex border-t md:hidden"
+          style={{
+            background: 'rgba(255, 255, 255, 0.7)',
+            backdropFilter: 'blur(10px)',
+            borderTop: '1px solid #D6CCC2',
+          }}
+          data-testid="mobile-nav"
+        >
           {navItems.map(({ href, icon: Icon, label }) => (
             <Link
               key={href}
               href={href}
               className={cn(
-                'hover:bg-accent flex flex-1 flex-col items-center gap-1 py-2 text-xs transition-colors',
-                pathname.startsWith(href) && 'text-primary'
+                'flex flex-1 flex-col items-center gap-1 py-2 text-xs transition-all hover:bg-[#D6CCC2]/40',
+                pathname.startsWith(href) ? 'font-semibold text-[#8b6b5a]' : 'text-[#6b5b50]'
               )}
               data-testid={`mobile-nav-${label}`}
             >

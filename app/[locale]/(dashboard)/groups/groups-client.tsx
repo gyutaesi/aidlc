@@ -5,9 +5,15 @@ import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { GroupColumn } from '@/components/features/group/group-column'
 import { BookmarkSaveModal } from '@/components/features/bookmark/bookmark-save-modal'
-import { deleteGroupAction } from '@/lib/actions/group.actions'
+import {
+  createGroupAction,
+  deleteGroupAction,
+  updateGroupAction,
+} from '@/lib/actions/group.actions'
 import type { GroupWithBookmarks } from '@/lib/services/group.service'
 
 interface GroupDashboardClientProps {
@@ -19,10 +25,64 @@ export function GroupDashboardClient({ initialGroups }: GroupDashboardClientProp
   const [groups, setGroups] = useState(initialGroups)
   const [saveModalOpen, setSaveModalOpen] = useState(false)
   const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>()
+  const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [editingGroup, setEditingGroup] = useState<{
+    id: string
+    name: string
+    emoji?: string
+  } | null>(null)
+  const [newGroupName, setNewGroupName] = useState('')
+  const [newGroupEmoji, setNewGroupEmoji] = useState('')
+  const [isCreating, setIsCreating] = useState(false)
 
   function handleAddBookmark(groupId: string) {
     setSelectedGroupId(groupId)
     setSaveModalOpen(true)
+  }
+
+  async function handleCreateGroup() {
+    if (!newGroupName.trim()) return
+    setIsCreating(true)
+    const formData = new FormData()
+    formData.set('name', newGroupName.trim())
+    if (newGroupEmoji.trim()) formData.set('emoji', newGroupEmoji.trim())
+
+    const result = await createGroupAction(formData)
+    if (result.success) {
+      toast.success(t('createSuccess'))
+      setCreateModalOpen(false)
+      setNewGroupName('')
+      setNewGroupEmoji('')
+      window.location.reload()
+    } else {
+      toast.error(result.error)
+    }
+    setIsCreating(false)
+  }
+
+  function handleEditGroup(group: { id: string; name: string; emoji?: string | null }) {
+    setEditingGroup({ id: group.id, name: group.name, emoji: group.emoji ?? '' })
+    setEditModalOpen(true)
+  }
+
+  async function handleSaveEdit() {
+    if (!editingGroup || !editingGroup.name.trim()) return
+    setIsCreating(true)
+    const formData = new FormData()
+    formData.set('name', editingGroup.name.trim())
+    if (editingGroup.emoji?.trim()) formData.set('emoji', editingGroup.emoji.trim())
+
+    const result = await updateGroupAction(editingGroup.id, formData)
+    if (result.success) {
+      toast.success('그룹이 수정되었습니다')
+      setEditModalOpen(false)
+      setEditingGroup(null)
+      window.location.reload()
+    } else {
+      toast.error(result.error)
+    }
+    setIsCreating(false)
   }
 
   async function handleDeleteGroup(groupId: string) {
@@ -44,16 +104,16 @@ export function GroupDashboardClient({ initialGroups }: GroupDashboardClientProp
             key={group.id}
             group={group}
             onAddBookmark={handleAddBookmark}
-            onEdit={(_g) => toast.info('그룹 편집')}
+            onEdit={handleEditGroup}
             onDelete={handleDeleteGroup}
-            onConvertToCollection={(_id) => toast.info('컬렉션 변환')}
+            onConvertToCollection={(_id) => toast.info('컬렉션 변환 기능은 준비 중입니다')}
           />
         ))}
 
         <Button
           variant="outline"
           className="h-auto w-[280px] flex-shrink-0 flex-col gap-2 py-8"
-          onClick={() => toast.info('그룹 생성')}
+          onClick={() => setCreateModalOpen(true)}
           data-testid="create-group-button"
         >
           <Plus className="h-6 w-6" />
@@ -72,7 +132,7 @@ export function GroupDashboardClient({ initialGroups }: GroupDashboardClientProp
             <summary className="flex cursor-pointer items-center gap-2 px-4 py-3 font-medium">
               {group.emoji && <span>{group.emoji}</span>}
               {group.name}
-              <span className="text-muted-foreground ml-auto text-sm">
+              <span className="ml-auto text-sm text-muted-foreground">
                 ({group.bookmarks.length})
               </span>
             </summary>
@@ -85,7 +145,86 @@ export function GroupDashboardClient({ initialGroups }: GroupDashboardClientProp
             </div>
           </details>
         ))}
+
+        <Button variant="outline" className="w-full py-4" onClick={() => setCreateModalOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          {t('create')}
+        </Button>
       </div>
+
+      {/* 그룹 생성 모달 */}
+      <Dialog open={createModalOpen} onOpenChange={setCreateModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('create')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-sm font-medium">{t('nameLabel')}</label>
+              <Input
+                value={newGroupName}
+                onChange={(e) => setNewGroupName(e.target.value)}
+                placeholder={t('namePlaceholder')}
+                onKeyDown={(e) => e.key === 'Enter' && handleCreateGroup()}
+                data-testid="create-group-name-input"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">이모지 (선택)</label>
+              <Input
+                value={newGroupEmoji}
+                onChange={(e) => setNewGroupEmoji(e.target.value)}
+                placeholder="📁"
+                data-testid="create-group-emoji-input"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setCreateModalOpen(false)}>
+                취소
+              </Button>
+              <Button onClick={handleCreateGroup} disabled={isCreating || !newGroupName.trim()}>
+                {isCreating ? '생성 중...' : t('create')}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 그룹 편집 모달 */}
+      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>그룹 편집</DialogTitle>
+          </DialogHeader>
+          {editingGroup && (
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-sm font-medium">{t('nameLabel')}</label>
+                <Input
+                  value={editingGroup.name}
+                  onChange={(e) => setEditingGroup({ ...editingGroup, name: e.target.value })}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit()}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium">이모지 (선택)</label>
+                <Input
+                  value={editingGroup.emoji ?? ''}
+                  onChange={(e) => setEditingGroup({ ...editingGroup, emoji: e.target.value })}
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setEditModalOpen(false)}>
+                  취소
+                </Button>
+                <Button onClick={handleSaveEdit} disabled={isCreating || !editingGroup.name.trim()}>
+                  {isCreating ? '저장 중...' : '저장'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <BookmarkSaveModal
         open={saveModalOpen}
