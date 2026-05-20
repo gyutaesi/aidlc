@@ -45,7 +45,8 @@
 - [x] NFR Requirements (Unit 2: Application) - Completed
 - [x] NFR Design (Unit 2: Application) - Completed
 - [x] Infrastructure Design (Unit 2: Application) - Completed
-- [ ] Code Generation - EXECUTE (ALWAYS)
+- [x] Code Generation (Unit 2: Application) - Completed
+- [ ] Build and Test - EXECUTE (ALWAYS)
 
 ### CONSTRUCTION PHASE
 - [ ] Build and Test - EXECUTE (ALWAYS)
