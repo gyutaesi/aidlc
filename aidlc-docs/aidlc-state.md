@@ -4,8 +4,8 @@
 - **Project Name**: moaring
 - **Project Type**: Greenfield
 - **Start Date**: 2026-05-20T00:00:00Z
-- **Current Phase**: INCEPTION
-- **Current Stage**: Workflow Planning
+- **Current Phase**: CONSTRUCTION
+- **Current Stage**: Unit 3 Complete (Build and Test pending)
 - **Language**: Korean (한국어)
 
 ## Workspace State
@@ -40,32 +40,36 @@
 - [x] Units Generation - Completed
 - **Next Stage**: CONSTRUCTION PHASE
 
-### CONSTRUCTION PHASE (per unit)
-- [ ] Functional Design - EXECUTE
-- [ ] NFR Requirements - EXECUTE
-- [ ] NFR Design - EXECUTE
-- [ ] Infrastructure Design - EXECUTE
-- [ ] Code Generation - EXECUTE (ALWAYS)
+### CONSTRUCTION PHASE (Unit 3: Chrome Extension)
+- [x] Functional Design - Completed
+- [x] NFR Requirements - Completed
+- [x] NFR Design - Completed
+- [x] Infrastructure Design - Completed
+- [x] Code Generation - Completed
+
+### CONSTRUCTION PHASE (Unit 1: Infrastructure)
+- [ ] Functional Design - Pending
+- [ ] NFR Requirements - Pending
+- [ ] NFR Design - Pending
+- [ ] Infrastructure Design - Pending
+- [ ] Code Generation - Pending
+
+### CONSTRUCTION PHASE (Unit 2: Next.js App)
+- [ ] Functional Design - Pending
+- [ ] NFR Requirements - Pending
+- [ ] NFR Design - Pending
+- [ ] Infrastructure Design - Pending
+- [ ] Code Generation - Pending
 
 ### CONSTRUCTION PHASE
-- [ ] Build and Test - EXECUTE (ALWAYS)
+- [ ] Build and Test - EXECUTE (ALWAYS, 모든 Unit 완료 후)
 
 ### OPERATIONS PHASE
 - [ ] Operations - PLACEHOLDER
 
 ## Current Status
-- **Lifecycle Phase**: INCEPTION
-- **Current Stage**: Workflow Planning Complete
-- **Next Stage**: Application Design
-- **Status**: Ready to proceed
-- [ ] User Stories - Pending
-- [ ] Workflow Planning - Pending
-- [ ] Application Design - Pending
-- [ ] Units Generation - Pending
-
-### CONSTRUCTION PHASE
-- [ ] Per-Unit Loop - Pending
-- [ ] Build and Test - Pending
-
-### OPERATIONS PHASE
-- [ ] Operations - Placeholder
+- **Lifecycle Phase**: CONSTRUCTION
+- **Current Stage**: Unit 3 Chrome Extension Complete
+- **Next Stage**: Unit 1 Infrastructure 또는 Unit 2 Next.js App (사용자 선택)
+- **Status**: Unit 3 Code Generation 승인 완료. 다음 Unit 대기 중.
+- **Branch**: feature/unit3-chrome-extension
