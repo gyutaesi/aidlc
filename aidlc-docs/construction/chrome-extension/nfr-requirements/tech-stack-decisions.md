@@ -18,7 +18,8 @@
 | Extension 표준 | Manifest V3 | — | Chrome 현행 표준 |
 | 인증 | chrome.identity.launchWebAuthFlow | — | MV3 표준 OAuth 패턴 |
 | 토큰 저장 | chrome.storage.local | — | Extension 격리 보장 |
-| 상태 관리 | React useState/useEffect | — | 단순 팝업 앱, 별도 라이브러리 불필요 |
+| 상태 관리 | Zustand | 4.x | 컴포넌트 간 이벤트 전파(토스트, savedUrls 공유), 인터셉터 패턴 지원, ~3KB gzip |
+| HTTP 클라이언트 | axios | 1.x | 인터셉터로 토큰 갱신/재시도 로직 분리, 타임아웃 옵션 내장, ~13KB gzip |
 
 ---
 
@@ -27,8 +28,10 @@
 ### 프로덕션 의존성
 ```json
 {
+  "axios": "^1.7.0",
   "react": "^18.3.0",
-  "react-dom": "^18.3.0"
+  "react-dom": "^18.3.0",
+  "zustand": "^4.5.0"
 }
 ```
 
@@ -48,9 +51,8 @@
 }
 ```
 
-**의존성 최소화 원칙**: 외부 라이브러리는 번들 크기에 직접 영향. 아래 항목은 네이티브 API로 대체:
-- `date-fns` → `Intl.RelativeTimeFormat` (상대 시간 표시)
-- `axios` → `fetch` + `AbortController` (HTTP 클라이언트)
+**의존성 원칙**: 구현 복잡도 감소 효과가 번들 크기 증가보다 클 때 라이브러리를 채택. 아래 항목은 네이티브 API로 대체:
+- `date-fns` → `Intl.RelativeTimeFormat` (상대 시간 표시, ~75KB 절약)
 - `lodash` → 네이티브 JS 메서드
 
 ---
@@ -103,18 +105,73 @@ export default defineConfig({
 
 ---
 
-### 4. 상태 관리 — 별도 라이브러리 미사용
+### 4. 상태 관리 — Zustand 채택
 
 **선택 이유**:
-- Extension 팝업은 단일 페이지, 컴포넌트 트리가 얕음
-- Redux/Zustand 도입 시 번들 크기 증가 (각 ~10-30KB)
-- `useState` + `useEffect` + props drilling으로 충분한 규모
+- `savedUrls`가 SavePage(중복 감지)와 Recommend(필터링) 두 곳에서 공유 필요
+- 토스트 알림은 어느 컴포넌트에서든 트리거 가능해야 함
+- 저장 성공 시 RecentList 갱신 등 컴포넌트 간 이벤트 전파 필요
+- Zustand ~3KB gzip — 1MB 번들 제한의 0.3%, 복잡도 감소 효과가 훨씬 큼
 
-**예외**: 전역 상태가 필요한 경우 React Context 사용 (라이브러리 추가 없음)
+**스토어 구조**:
+```typescript
+// store/useAppStore.ts
+interface AppStore {
+  // 인증
+  authState: AuthState | null
+  setAuthState: (state: AuthState | null) => void
+
+  // 캐시
+  savedUrls: string[]
+  setSavedUrls: (urls: string[]) => void
+
+  // 그룹
+  groups: Group[]
+  setGroups: (groups: Group[]) => void
+
+  // 토스트
+  toast: { message: string; type: 'error' | 'success' | 'info' } | null
+  showToast: (message: string, type: 'error' | 'success' | 'info') => void
+  clearToast: () => void
+}
+```
 
 ---
 
-### 5. npm 선택 (패키지 매니저)
+### 6. axios 채택 (fetch 미사용)
+
+**선택 이유**:
+- `api-client.ts`에서 구현해야 할 로직: 타임아웃, 401 토큰 갱신 재시도, GET 1회 재시도, 오프라인 감지, 에러 표준화, Mock 분기
+- fetch로 직접 구현 시 `api-client.ts`가 복잡한 래퍼로 비대해짐
+- axios 인터셉터로 토큰 갱신(request interceptor)과 재시도(response interceptor) 로직을 깔끔하게 분리 가능
+- 타임아웃을 `timeout: 3000` 옵션 하나로 처리 (fetch는 AbortController + setTimeout 조합 필요)
+- ~13KB gzip — 1MB 번들 제한의 1.3%, 구현 복잡도 감소 효과가 훨씬 큼
+
+**인터셉터 구조**:
+```typescript
+// api-client.ts
+const client = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+  timeout: 3000,
+})
+
+// Request: 토큰 자동 첨부
+client.interceptors.request.use(async (config) => {
+  const token = await AuthManager.getValidToken()
+  if (token) config.headers.Authorization = `Bearer ${token}`
+  return config
+})
+
+// Response: 401 시 토큰 갱신 후 재시도
+client.interceptors.response.use(null, async (error) => {
+  if (error.response?.status === 401 && !error.config._retry) {
+    error.config._retry = true
+    await AuthManager.refreshToken()
+    return client(error.config)
+  }
+  throw error
+})
+```
 
 **선택 이유**: 모노레포 루트와 동일한 패키지 매니저 사용으로 일관성 유지
 
@@ -138,10 +195,10 @@ export default defineConfig({
 | React 19 | MV3 환경 호환성 미검증, 신기능 불필요 |
 | Webpack | 설정 복잡도 높음, Vite 대비 빌드 속도 느림 |
 | Parcel | MV3 지원 성숙도 낮음 |
-| Redux/Zustand | 번들 크기 증가, 팝업 규모에 과도 |
+| Redux | 번들 크기 과도 (~30KB), Zustand로 충분 |
 | MSW | MV3 Service Worker 환경에서 설정 복잡 |
 | Sentry | MVP 수준에서 과도, 사용자 증가 후 추가 예정 |
-| axios | fetch + AbortController로 대체 가능, 번들 절약 |
+| fetch + AbortController | 타임아웃/재시도/인터셉터 직접 구현 시 복잡도 과도 |
 | TypeScript strict: true | 빠른 개발 우선, 안정화 후 전환 예정 |
 | connect-src CSP 제한 | MVP에서는 기본 MV3 CSP로 충분, Web Store 배포 시 추가 |
 
