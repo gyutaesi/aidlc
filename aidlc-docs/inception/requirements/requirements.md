@@ -38,8 +38,8 @@
 | **백엔드** | Next.js API Routes / Server Actions | 풀스택 단일 코드베이스 |
 | **데이터베이스** | PostgreSQL (Amazon Aurora Serverless v2) | JSONB 블록 저장, tsvector 검색 |
 | **파일 저장** | AWS S3 + CloudFront | 이미지 업로드, 썸네일 CDN |
-| **인증** | Next-Auth (이메일+비밀번호) | MVP: 이메일+비밀번호만 |
-| **이메일** | Amazon SES | 비밀번호 재설정 (Post-MVP) |
+| **인증** | Amazon Cognito User Pool | 이메일+비밀번호, JWT 발급, 이메일 인증, 비밀번호 재설정 내장 |
+| **이메일** | Cognito 기본 이메일 (MVP) → Amazon SES (Post-MVP) | MVP: Cognito 내장 이메일 사용 (50건/일 제한), 추후 SES로 전환 |
 | **스케줄러** | Amazon EventBridge Scheduler + Lambda | 링크 상태 체크 (매일 1회) |
 | **큐** | Amazon SQS | 대량 링크 체크 배치 처리 |
 | **컨테이너** | Amazon ECS/Fargate + ECR | 컨테이너 배포 |
@@ -85,12 +85,12 @@
 
 | ID | 요구사항 | 우선순위 |
 |----|----------|----------|
-| FR-01-1 | 이메일 + 비밀번호로 회원가입 | Must |
-| FR-01-2 | 이메일 + 비밀번호로 로그인 | Must |
-| FR-01-3 | 로그인 상태 유지 (JWT / Session) | Must |
-| FR-01-4 | 로그아웃 | Must |
-| FR-01-5 | 비밀번호 재설정 (이메일 발송) | Post-MVP |
-| FR-01-6 | 이메일 인증 (가입 후 활성화) | Post-MVP |
+| FR-01-1 | Amazon Cognito User Pool 기반 회원가입 (이메일 + 비밀번호) | Must |
+| FR-01-2 | Cognito 기반 로그인, JWT(ID Token / Access Token) 발급 | Must |
+| FR-01-3 | Cognito 이메일 인증 (가입 후 인증 코드 입력으로 활성화) | Must |
+| FR-01-4 | Cognito 비밀번호 재설정 (이메일 → 코드 입력 → 새 비밀번호) | Must |
+| FR-01-5 | 로그아웃 (Cognito 세션 무효화) | Must |
+| FR-01-6 | JWT 기반 API 인증 (Cognito 발급 토큰 검증) | Must |
 | FR-01-7 | 크로스 디바이스 동기화 (계정 기반) | Must |
 | FR-01-8 | 사용자별 데이터 완전 격리 | Must |
 
@@ -242,7 +242,8 @@
 | Amazon Aurora PostgreSQL | 주 데이터베이스 | Serverless v2 |
 | Amazon S3 | 이미지/파일 저장 | Pre-signed URL 업로드 |
 | Amazon CloudFront | CDN, 정적 자산 배포 | OAC 설정 |
-| Amazon SES | 이메일 발송 | 비밀번호 재설정 (Post-MVP) |
+| Amazon Cognito User Pool | 인증 (회원가입/로그인/JWT/이메일 인증/비밀번호 재설정) | Cognito 기본 이메일 사용 (MVP) |
+| Amazon SES | 커스텀 발신자 이메일 발송 | **Post-MVP** (SES 샌드박스 해제 후 Cognito 연동) |
 | Amazon EventBridge Scheduler | 링크 체크 스케줄러 | 매일 1회 |
 | Amazon SQS | 링크 체크 배치 큐 | Lambda Worker 연동 |
 | Amazon ECS/Fargate | 앱 컨테이너 실행 | Next.js 앱 |
@@ -308,8 +309,8 @@ Tag
 | 8 | Chrome Extension | 현재 페이지 저장, 자주 방문 추천(빈도 기반), 최근 저장 목록 |
 
 **MVP 제외 (Post-MVP):**
-- 이메일 인증 / 비밀번호 재설정
-- Google OAuth
+- Google OAuth (Cognito에 추후 Social Provider 추가)
+- Amazon SES 연동 (커스텀 발신자 도메인, 현재는 Cognito 기본 이메일 사용)
 - AI 기반 자동 추천 (추후 Google Gemini)
 - Chrome Web Store 정식 배포
 - i18n 영어 번역

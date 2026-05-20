@@ -119,7 +119,7 @@ C) 이메일+비밀번호 + Google + GitHub OAuth
 D) 매직링크(이메일 인증 링크) 위주  
 X) Other (please describe after [Answer]: tag below)
 
-[Answer]: A
+[Answer]: X — AWS Cognito 사용. 이메일+비밀번호 기본 제공, 추후 Google OAuth 추가 가능.
 
 > **💡 AWS 기준 추천: B) 이메일+비밀번호 + Google OAuth (Amazon Cognito 활용)**
 > AWS를 사용한다면 **Amazon Cognito**로 인증을 관리하는 것이 좋습니다. Cognito는 이메일+비밀번호, Google OAuth, 비밀번호 재설정, 이메일 인증을 모두 관리형으로 제공하므로 직접 구현할 필요가 없습니다. Google OAuth를 추가해도 Cognito 설정만으로 처리되며, JWT 토큰 발급/검증도 자동화됩니다. MVP라도 Cognito를 쓰면 보안 부담이 크게 줄어듭니다.
@@ -132,7 +132,7 @@ B) 불필요 — 가입 즉시 사용 가능 (MVP)
 C) 선택적 — 인증 없이 가입 가능하지만 일부 기능(공유 등)은 인증 필요  
 X) Other (please describe after [Answer]: tag below)
 
-[Answer]: B
+[Answer]: X — AWS Cognito 사용 시 이메일 인증이 기본 내장. MVP부터 적용.
 
 > **💡 AWS 기준 추천: A) 필요함 (Amazon Cognito + SES 활용)**
 > Amazon Cognito를 사용하면 이메일 인증이 기본 내장 기능으로 제공됩니다. 별도 구현 없이 Cognito 설정만으로 인증 메일 발송(Amazon SES 연동)이 가능합니다. 스팸 계정 방지와 비밀번호 재설정 흐름을 위해서도 이메일 인증은 권장됩니다. 구현 비용이 거의 없으므로 MVP에서도 포함하는 것이 좋습니다.
@@ -144,7 +144,7 @@ A) 필요함 — 이메일을 통한 비밀번호 재설정 흐름 포함
 B) MVP에서는 제외, 추후 추가  
 X) Other (please describe after [Answer]: tag below)
 
-[Answer]: B
+[Answer]: X — AWS Cognito 사용 시 비밀번호 재설정 기본 내장. MVP부터 적용.
 
 > **💡 AWS 기준 추천: A) 필요함 (Amazon Cognito 기본 제공)**
 > Cognito를 사용하면 비밀번호 재설정 흐름(이메일 발송 → 코드 입력 → 새 비밀번호 설정)이 기본 내장되어 있습니다. Amazon SES와 연동하면 커스텀 이메일 템플릿도 적용 가능합니다. 별도 구현 비용이 없으므로 MVP부터 포함하는 것이 좋습니다.
