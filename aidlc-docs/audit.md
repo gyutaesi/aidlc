@@ -99,6 +99,163 @@
 
 ---
 
+## Unit 1 Infrastructure - Branch Created
+**Timestamp**: 2026-05-20T00:00:10Z
+**User Input**: "ai-dlc중인데 나는 유닛1 인프라 담당이야 브랜치 따서 진행하자"
+**AI Response**: Created branch `feature/unit1-infrastructure` from `main`. Ready to begin CONSTRUCTION PHASE for Unit 1 (Infrastructure). Next stage: Functional Design → NFR Requirements → NFR Design → Infrastructure Design → Code Generation.
+**Context**: CONSTRUCTION PHASE - Unit 1 Infrastructure (Branch Setup)
+
+---
+
+## Unit 1 Infrastructure - Functional Design Plan Created
+**Timestamp**: 2026-05-20T00:00:11Z
+**User Input**: "응 진행하자"
+**AI Response**: Created `aidlc-docs/construction/plans/infrastructure-functional-design-plan.md` with 20 questions covering VPC/Networking, Aurora, Cognito, S3/CloudFront, ECS/Fargate, ALB/SSL, Parameter Store, and CDK stack configuration. Awaiting user answers.
+**Context**: CONSTRUCTION PHASE - Unit 1 Infrastructure - Functional Design (Step 2: Questions Generated)
+
+---
+
+## Unit 1 Infrastructure - Functional Design Questions Confirmed
+**Timestamp**: 2026-05-20T00:00:12Z
+**User Input**: "컨펌"
+**AI Response**: All 20 questions confirmed with demo-oriented answers. Proceeding to generate Functional Design artifacts: business-logic-model.md, business-rules.md, domain-entities.md
+**Context**: CONSTRUCTION PHASE - Unit 1 Infrastructure - Functional Design (Step 3: Generate Artifacts)
+
+---
+
+## Unit 1 Infrastructure - Functional Design Completed
+**Timestamp**: 2026-05-20T00:00:13Z
+**User Input**: N/A (artifact generation)
+**AI Response**: Generated 3 Functional Design artifacts:
+- `aidlc-docs/construction/infrastructure/functional-design/business-logic-model.md` — 6개 스택 프로비저닝 흐름, 스택별 구성 로직
+- `aidlc-docs/construction/infrastructure/functional-design/business-rules.md` — 23개 비즈니스 규칙 (네트워킹/DB/인증/스토리지/컨테이너/Parameter Store/CDK)
+- `aidlc-docs/construction/infrastructure/functional-design/domain-entities.md` — 6개 스택 엔티티, 리소스 네이밍 규칙, 의존성 그래프
+Updated aidlc-state.md: Functional Design → COMPLETED. Updated plan checkboxes.
+**Context**: CONSTRUCTION PHASE - Unit 1 Infrastructure - Functional Design (Completed)
+
+---
+
+## Unit 1 Infrastructure - Functional Design Review Fixes
+**Timestamp**: 2026-05-20T00:00:14Z
+**User Input**: "너가 리뷰한번 해볼래?" / "응 그렇게해줘"
+**AI Response**: Self-review identified 3 critical issues + 2 improvements. Applied fixes:
+1. [CRITICAL] DB URL Parameter Store 저장 제거 → Secrets Manager ARN을 ECS Task Definition secrets로 직접 참조
+2. [CRITICAL] ECR pull 권한을 Task Role → Task Execution Role로 이동
+3. [CRITICAL] ConfigStack db-url 파라미터 제거 (5개로 축소)
+4. [IMPROVEMENT] ECS Service minimumHealthyPercent: 0 추가 (태스크 1개 Rolling update 배포 가능하도록)
+5. [IMPROVEMENT] AppStack dbSecret 사용 방법 명시
+Files updated: business-logic-model.md, business-rules.md, domain-entities.md
+**Context**: CONSTRUCTION PHASE - Unit 1 Infrastructure - Functional Design (Review & Fix)
+
+---
+
+## Unit 1 Infrastructure - Functional Design Approved
+**Timestamp**: 2026-05-20T00:00:15Z
+**User Input**: "컨펌"
+**AI Response**: Functional Design approved. Proceeding to NFR Requirements stage.
+**Context**: CONSTRUCTION PHASE - Unit 1 Infrastructure - Functional Design (Approved) → NFR Requirements (Starting)
+
+---
+
+## Unit 1 Infrastructure - NFR Requirements Completed
+**Timestamp**: 2026-05-20T00:00:16Z
+**User Input**: "추천답변대로 진행 ㄱ"
+**AI Response**: Generated 2 NFR Requirements artifacts:
+- `nfr-requirements.md`: 6개 영역 NFR 정의 (성능/가용성/보안/운영/비용/유지보수). 예상 월 비용 ~$81, 리전 ap-northeast-2, SSM Session Manager DB 접근, Prisma migrate 자동화.
+- `tech-stack-decisions.md`: 7개 핵심 기술 결정 및 근거, 미사용 기술 목록, CDK 패키지 의존성, 배포 전제 조건.
+Updated plan checkboxes and aidlc-state.md.
+**Context**: CONSTRUCTION PHASE - Unit 1 Infrastructure - NFR Requirements (Completed)
+
+---
+
+## Unit 1 Infrastructure - NFR Requirements Review Fixes
+**Timestamp**: 2026-05-20T00:00:17Z
+**User Input**: "리뷰한번 해볼래?" / "저수준 직접구성으로 가자"
+**AI Response**: Self-review identified 2 critical issues + 1 improvement. Applied fixes:
+1. [CRITICAL] ECS Exec용 ssmmessages 권한 4개 Task Role에 추가 (nfr-requirements.md, tech-stack-decisions.md, domain-entities.md, business-rules.md 동기화)
+2. [CRITICAL] aws_ecs_patterns 제거 → aws_ecs 저수준 직접 구성으로 명시 (tech-stack-decisions.md)
+3. [IMPROVEMENT] Aurora Serverless v2 비용 수정: ~$15 → ~$43 (0.5 ACU × $0.12/hr × 720hr), 합계 ~$81 → ~$109
+**Context**: CONSTRUCTION PHASE - Unit 1 Infrastructure - NFR Requirements (Review & Fix)
+
+---
+
+## Unit 1 Infrastructure - NFR Requirements Approved
+**Timestamp**: 2026-05-20T00:00:18Z
+**User Input**: "컨펌"
+**AI Response**: NFR Requirements approved. Proceeding to NFR Design stage.
+**Context**: CONSTRUCTION PHASE - Unit 1 Infrastructure - NFR Requirements (Approved) → NFR Design (Starting)
+
+---
+
+## Unit 1 Infrastructure - NFR Design Completed
+**Timestamp**: 2026-05-20T00:00:19Z
+**User Input**: "답변완료"
+**AI Response**: Generated 2 NFR Design artifacts:
+- `nfr-design-patterns.md`: 9개 패턴 정의 (RP-01~03 복원력, SP-01 확장성, PP-01~02 성능, SEP-01~03 보안). 모두 낮은 복잡도.
+- `logical-components.md`: 6개 논리 컴포넌트 상세 명세 (ALB, ECS, Aurora, S3+CF, Cognito, ECR+SSM), IAM 역할 명세, 네트워크 트래픽 흐름 요약, 전체 구성도.
+Updated plan checkboxes and aidlc-state.md.
+**Context**: CONSTRUCTION PHASE - Unit 1 Infrastructure - NFR Design (Completed)
+
+---
+
+## Unit 1 Infrastructure - NFR Design Review Fixes
+**Timestamp**: 2026-05-20T00:00:20Z
+**User Input**: "리뷰한번해봐" / "응 수정해"
+**AI Response**: Self-review identified 2 critical issues + 1 improvement. Applied fixes:
+1. [CRITICAL] DATABASE_URL ECS Secrets 주입 방식 수정 — ECS는 Secrets Manager JSON에서 단일 필드만 추출 가능. 별도 DATABASE_URL Secret(/moaring/prod/database-url) 생성 방식으로 변경. 코드 생성 단계에서 구체적 구현 결정 명시. (logical-components.md)
+2. [CRITICAL] config.ts에서 cdk.Duration 제거 — cloudfront.defaultTtlDays/maxTtlDays, cognito.accessTokenValidityMinutes 등 숫자 값으로 변경. 각 스택에서 cdk.Duration으로 감싸는 패턴 추가. (nfr-design-patterns.md)
+3. [IMPROVEMENT] SEP-03 ECS Exec SSM Agent 전제 조건 추가 — node:alpine에는 SSM Agent 없음. node:20-slim 권장 명시. (nfr-design-patterns.md)
+**Context**: CONSTRUCTION PHASE - Unit 1 Infrastructure - NFR Design (Review & Fix)
+
+---
+
+## Unit 1 Infrastructure - NFR Design Approved
+**Timestamp**: 2026-05-20T00:00:21Z
+**User Input**: "응 컴펌할게 다음단계로 가자"
+**AI Response**: NFR Design approved. Committed all changes (f04e1a3). Proceeding to Infrastructure Design stage.
+**Context**: CONSTRUCTION PHASE - Unit 1 Infrastructure - NFR Design (Approved) → Infrastructure Design (Starting)
+
+---
+
+## Unit 1 Infrastructure - Infrastructure Design Completed
+**Timestamp**: 2026-05-20T00:00:22Z
+**User Input**: "응 추천대로 진행하자"
+**AI Response**: Generated 2 Infrastructure Design artifacts:
+- `infrastructure-design.md`: 6개 CDK 스택 → AWS 서비스 매핑 상세 명세. DB 자격증명 Secrets Manager JSON 필드별 개별 주입(DB_HOST/DB_USER/DB_PASSWORD) + 앱 코드 URL 조합 방식 확정. 환경변수 전체 목록(12개), 삭제 정책 요약.
+- `deployment-architecture.md`: 전체 배포 아키텍처 다이어그램, 최초/이후 배포 파이프라인, 스택 의존성 그래프, 인프라 정리 절차, 운영 참고 명령어.
+Updated plan checkboxes and aidlc-state.md.
+**Context**: CONSTRUCTION PHASE - Unit 1 Infrastructure - Infrastructure Design (Completed)
+
+---
+
+## Unit 1 Infrastructure - Infrastructure Design Approved
+**Timestamp**: 2026-05-20T00:00:23Z
+**User Input**: "응 시작하자!"
+**AI Response**: Infrastructure Design approved. Proceeding to Code Generation stage (Part 1: Planning).
+**Context**: CONSTRUCTION PHASE - Unit 1 Infrastructure - Infrastructure Design (Approved) → Code Generation (Starting)
+
+---
+
+## Unit 1 Infrastructure - Code Generation Plan Created
+**Timestamp**: 2026-05-20T00:00:24Z
+**User Input**: N/A (plan creation)
+**AI Response**: Created infrastructure-code-generation-plan.md. 11 steps, 13 files. Awaiting user approval before generation.
+**Context**: CONSTRUCTION PHASE - Unit 1 Infrastructure - Code Generation Part 1 (Planning)
+
+---
+
+## Unit 1 Infrastructure - Code Generation Completed
+**Timestamp**: 2026-05-20T00:00:25Z
+**User Input**: "응 진행하자"
+**AI Response**: Generated 11 files following the approved plan:
+- infra/package.json, tsconfig.json, cdk.json, .gitignore
+- infra/lib/config.ts, network-stack.ts, database-stack.ts, auth-stack.ts, storage-stack.ts, app-stack.ts, config-stack.ts
+- infra/bin/moaring.ts
+- infra/README.md
+- aidlc-docs/construction/infrastructure/code/code-summary.md
+Verified: npm install OK, tsc --noEmit OK, cdk synth OK (after fixing 2 warnings: containerInsights → containerInsightsV2, added circuitBreaker rollback).
+**Context**: CONSTRUCTION PHASE - Unit 1 Infrastructure - Code Generation (Completed)
+
 ## Construction Phase - Unit 3 Chrome Extension 시작
 
 **Timestamp**: 2026-05-20T00:10:00Z
