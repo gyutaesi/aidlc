@@ -1,141 +1,138 @@
-# Performance Test Instructions — moaring
+# Performance Test Instructions — moaring (Unit 2: Next.js App)
 
-> **상태**: Unit 3 (Chrome Extension) 성능 측정만 적용 가능. 서버측 성능은 Unit 2 완료 후.  
-> **작성일**: 2026-05-20
+## 성능 요구사항 (NFR)
 
----
-
-## Unit 3 (Chrome Extension) 성능 요구사항
-
-| ID | 요구사항 | 기준값 | 측정 방법 |
-|----|----------|--------|-----------|
-| PERF-01 | 팝업 초기 로딩 시간 | 500ms 이내 | Performance API |
-| PERF-02 | API 호출 타임아웃 | 3초 | axios timeout 설정 |
-| PERF-03 | 번들 크기 | 1MB 이하 | `du -sh dist/` |
-| PERF-04 | 병렬 초기화 | Promise.allSettled | 코드 검증 |
+| 항목                  | 목표    | 측정 방법                  |
+| --------------------- | ------- | -------------------------- |
+| 검색 응답 시간        | < 300ms | PostgreSQL EXPLAIN ANALYZE |
+| 공유 페이지 초기 로딩 | < 1.5s  | Lighthouse / curl 타이밍   |
+| API 응답 시간 (일반)  | < 500ms | curl -w 타이밍             |
 
 ---
 
-## PERF-03: 번들 크기 측정 (✅ 통과)
+## 1. DB 쿼리 성능 검증 (PostgreSQL EXPLAIN ANALYZE)
 
-### 실행
+### 검색 쿼리 성능
+
+```sql
+-- 로컬 DB에서 실행
+EXPLAIN ANALYZE
+SELECT 'bookmark' as type, b.id, b.title, b.url,
+       ts_rank(b.search_vector, plainto_tsquery('simple', 'nextjs')) as rank,
+       b.created_at
+FROM "bookmarks" b
+WHERE b.user_id = 'test-user-id'
+  AND b.search_vector @@ plainto_tsquery('simple', 'nextjs')
+ORDER BY rank DESC, created_at DESC
+LIMIT 20;
+
+-- 기대: "Index Scan using idx_bookmarks_search_vector" 확인
+-- 목표: Execution Time < 10ms (소규모 데이터)
+```
+
+### GIN 인덱스 확인
+
+```sql
+-- 인덱스 존재 확인
+SELECT indexname, indexdef
+FROM pg_indexes
+WHERE tablename IN ('bookmarks', 'collections')
+  AND indexname LIKE '%search_vector%';
+
+-- 기대: idx_bookmarks_search_vector, idx_collections_search_vector 존재
+```
+
+---
+
+## 2. API 응답 시간 측정 (curl)
 
 ```bash
-cd extension
-npm run build
-du -sh dist/
-du -sh dist/src/popup/popup.js
-du -sh dist/popup.css
+# 서버 실행 중 상태에서 실행
+
+# 헬스체크 응답 시간
+curl -w "\nTime: %{time_total}s\n" -o /dev/null -s \
+  http://localhost:3000/api/health
+
+# 검색 API 응답 시간 (로그인 토큰 필요)
+curl -w "\nTime: %{time_total}s\n" -o /dev/null -s \
+  -H "Authorization: Bearer {token}" \
+  "http://localhost:3000/api/search?q=test"
+
+# 목표: < 300ms
 ```
 
-### 현재 측정값
-
-| 항목 | 크기 | 목표 | 결과 |
-|------|------|------|------|
-| 전체 dist/ | 232KB | < 1MB | ✅ 통과 (23%) |
-| popup.js | 205KB (gzip 68KB) | — | — |
-| popup.css | 11KB (gzip 2.9KB) | — | — |
-| service-worker.js | 0.2KB | — | — |
-| manifest.json | 0.7KB | — | — |
-
 ---
 
-## PERF-01: 팝업 초기 로딩 시간 측정
-
-### 측정 방법 (Chrome DevTools)
-
-1. Extension 팝업을 우클릭 → "검사"로 DevTools 열기
-2. Network 탭 → "Slow 3G" 시뮬레이션 (옵션)
-3. Performance 탭 → 녹화 시작
-4. 팝업 닫고 다시 열기
-5. 녹화 종료 → "First Contentful Paint" / "Largest Contentful Paint" 확인
-
-### 코드 기반 측정 (옵션)
-
-`App.tsx`에 임시 측정 코드 추가:
-
-```typescript
-useEffect(() => {
-  const startTime = performance.now()
-  // ... 기존 init 코드
-  // 초기화 완료 시점에:
-  console.log('[PERF-01] Init time:', performance.now() - startTime, 'ms')
-}, [])
-```
-
-### 기대 결과
-
-- 캐시 히트 시: ~200ms
-- 캐시 미스 시 (첫 호출): ~500ms 이내
-
----
-
-## PERF-02: API 타임아웃 검증
-
-### 측정 방법
-
-`api-client.ts`의 axios 인스턴스 설정 확인:
-
-```typescript
-const client = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 3_000,  // ✅ 3초
-})
-```
-
-### 시나리오 테스트
-
-1. Mock 서버에 4초 지연을 시뮬레이션
-2. Extension에서 API 호출 시도
-3. 3초 후 TimeoutError 발생 확인
-4. 토스트 알림: "요청 시간이 초과되었습니다"
-
----
-
-## PERF-04: 병렬 초기화 검증
-
-### 측정 방법
-
-`App.tsx`의 초기화 로직 확인:
-
-```typescript
-const [groupsResult, urlsResult] = await Promise.allSettled([
-  apiClient.getGroups(),
-  cachedUrls !== null
-    ? Promise.resolve(cachedUrls)
-    : apiClient.getSavedUrls().then(...)
-])
-```
-
-### 검증 항목
-
-- `Promise.allSettled` 사용 (실패해도 다른 작업 계속)
-- 두 API가 순차가 아닌 동시 호출
-- 각 결과를 독립적으로 처리
-
----
-
-## 서버측 성능 (Unit 2 완료 후)
-
-Unit 2 (Next.js API) 완료 후 다음 항목 측정 예정:
-
-| 항목 | 목표 | 도구 권장 |
-|------|------|-----------|
-| 검색 응답 시간 | < 300ms (NFR-01-1) | k6, Artillery |
-| 공유 페이지 로딩 | < 1.5s (NFR-01-2) | Lighthouse, WebPageTest |
-| API 처리량 | TBD | k6 |
-| 동시 사용자 | TBD | k6 |
-
----
-
-## 빌드 산출물 분석 (Bundle Analyzer)
-
-번들 구성 분석이 필요한 경우:
+## 3. 공유 페이지 로딩 성능 (Lighthouse)
 
 ```bash
-cd extension
-npm install --save-dev rollup-plugin-visualizer
+# Chrome DevTools Lighthouse 또는 CLI 사용
+npx lighthouse http://localhost:3000/c/{slug} \
+  --output=json \
+  --output-path=./lighthouse-report.json \
+  --only-categories=performance
+
+# 목표 지표:
+# - First Contentful Paint: < 1.5s
+# - Largest Contentful Paint: < 2.5s
+# - Time to Interactive: < 3.5s
 ```
 
-`vite.config.ts`에 플러그인 추가 후 빌드하면 `stats.html` 생성.
-번들에서 가장 큰 의존성을 확인하여 최적화 대상 식별 가능.
+---
+
+## 4. 부하 테스트 (k6) — Post-MVP 권장
+
+MVP 규모(개인/팀 1~10명)에서는 부하 테스트가 필수는 아니지만, 기본 스크립트를 준비합니다.
+
+```javascript
+// k6-load-test.js
+import http from 'k6/http'
+import { check, sleep } from 'k6'
+
+export const options = {
+  vus: 5, // 동시 사용자 5명
+  duration: '30s',
+}
+
+export default function () {
+  // 헬스체크
+  const res = http.get('http://localhost:3000/api/health')
+  check(res, { 'status is 200': (r) => r.status === 200 })
+  sleep(1)
+}
+```
+
+```bash
+# k6 설치 후 실행
+k6 run k6-load-test.js
+
+# 목표:
+# - http_req_duration p(95) < 500ms
+# - http_req_failed < 1%
+```
+
+---
+
+## 5. Prisma 연결 풀 모니터링
+
+```bash
+# 프로덕션 환경에서 연결 수 모니터링
+psql {DATABASE_URL} -c "
+  SELECT count(*) as active_connections
+  FROM pg_stat_activity
+  WHERE datname = 'moaring'
+    AND state = 'active';
+"
+
+# 목표: ECS 태스크 1개 기준 최대 10개 연결 이하
+```
+
+---
+
+## 성능 최적화 체크리스트
+
+- [ ] GIN 인덱스 생성 확인 (`add_search_vectors` 마이그레이션 적용)
+- [ ] Prisma `connection_limit=10` 설정 확인
+- [ ] Next.js `output: 'standalone'` 빌드 확인
+- [ ] CloudFront 캐시 정책 설정 확인 (이미지: 1년, 앱: 캐시 없음)
+- [ ] ISR `revalidate = 60` 공개 컬렉션 페이지 적용 확인

@@ -1,130 +1,115 @@
-# Unit Test Instructions — moaring
+# Unit Test Execution — moaring (Unit 2: Next.js App)
 
-> **상태**: Unit Test 인프라 미설정  
-> **작성일**: 2026-05-20
+## 테스트 대상
+
+핵심 Service 로직 단위 테스트 (Jest + ts-jest)
+
+| 테스트 파일                  | 테스트 대상       | 주요 케이스                                          |
+| ---------------------------- | ----------------- | ---------------------------------------------------- |
+| `auth.service.test.ts`       | AuthService       | JWT 검증, User 조회, syncCognitoUser                 |
+| `bookmark.service.test.ts`   | BookmarkService   | create, getInbox, delete, markAsRead, importFromHtml |
+| `collection.service.test.ts` | CollectionService | create, togglePublic, updateSlug, reorderBlocks      |
+| `search.service.test.ts`     | SearchService     | 빈 쿼리, 검색 결과, 쿼리 길이 제한                   |
+| `tag.service.test.ts`        | TagService        | getOrCreate(정규화), autocomplete, setBookmarkTags   |
 
 ---
 
-## 현재 상태
+## 단위 테스트 실행
 
-Code Generation 단계에서 사용자가 명시적으로 요청하지 않아 단위 테스트는 작성되지 않았어요.
-(워크플로우 규칙: "DO NOT automatically add tests unless explicitly requested by the user")
-
-향후 단위 테스트가 필요할 때 아래 가이드를 참고하세요.
-
----
-
-## 권장 테스트 스택 (Unit 3: Chrome Extension)
-
-| 항목 | 권장 도구 | 이유 |
-|------|-----------|------|
-| Test Runner | Vitest | Vite 생태계 통합, 빠른 실행 |
-| React 컴포넌트 테스트 | @testing-library/react | data-testid 기반 쿼리 활용 |
-| chrome API Mock | @types/chrome + 수동 stub | MV3 환경 시뮬레이션 |
-| HTTP Mock | MSW | Mock 핸들러 재사용 가능 |
-
-### 설치 명령
+### 1. 사전 준비
 
 ```bash
-cd extension
-npm install --save-dev vitest @testing-library/react @testing-library/jest-dom jsdom
+cd /home/ksg/Projects/aidlc
+
+# 의존성 설치 (미설치 시)
+npm install
+
+# Prisma 클라이언트 생성 (미생성 시)
+npx prisma generate
 ```
 
-### vitest.config.ts 추가
-
-```typescript
-import { defineConfig } from 'vitest/config'
-import react from '@vitejs/plugin-react'
-
-export default defineConfig({
-  plugins: [react()],
-  test: {
-    environment: 'jsdom',
-    globals: true,
-    setupFiles: ['./test/setup.ts'],
-  },
-})
-```
-
-### package.json scripts 추가
-
-```json
-{
-  "scripts": {
-    "test": "vitest --run",
-    "test:watch": "vitest"
-  }
-}
-```
-
----
-
-## 테스트 실행 (테스트 추가 후)
+### 2. 전체 단위 테스트 실행
 
 ```bash
-# 전체 단위 테스트 (1회 실행)
 npm test
+# 또는
+npx jest --testPathPattern="lib/services/__tests__"
+```
 
-# Watch 모드 (개발 중)
+**기대 출력**:
+
+```
+PASS lib/services/__tests__/auth.service.test.ts
+PASS lib/services/__tests__/bookmark.service.test.ts
+PASS lib/services/__tests__/collection.service.test.ts
+PASS lib/services/__tests__/search.service.test.ts
+PASS lib/services/__tests__/tag.service.test.ts
+
+Test Suites: 5 passed, 5 total
+Tests:       XX passed, XX total
+Snapshots:   0 total
+Time:        X.XXXs
+```
+
+### 3. 커버리지 포함 실행
+
+```bash
+npm run test:coverage
+# 목표: 핵심 Service 70% 이상
+```
+
+**커버리지 리포트 위치**: `coverage/lcov-report/index.html`
+
+### 4. 특정 파일만 실행
+
+```bash
+# BookmarkService만
+npx jest bookmark.service.test
+
+# 특정 테스트 케이스만
+npx jest bookmark.service.test -t "OG 메타데이터"
+```
+
+### 5. Watch 모드 (개발 중)
+
+```bash
 npm run test:watch
 ```
 
 ---
 
-## 테스트 우선순위 (작성 시 권장 순서)
+## 테스트 실패 시 대응
 
-### 높음 (비즈니스 로직)
-1. `auth-manager.ts` — PKCE 생성, 토큰 갱신 로직
-2. `api-client.ts` — 인터셉터 (401 재시도, GET 재시도)
-3. `saved-url-cache.ts` — TTL 만료 로직
-4. `top-sites.ts` — 필터링 로직
-5. `useAppStore.ts` — 토스트 동일 메시지 가드
+### Prisma 모킹 에러
 
-### 중간 (UI 컴포넌트)
-6. `SavePage.tsx` — 중복 감지, 태그 파싱
-7. `RecentList.tsx` — 상대 시간 포맷팅
-8. `Recommend.tsx` — 추천 → 저장 탭 전환
+```bash
+# jest-mock-extended 재설치
+npm install --save-dev jest-mock-extended
+```
 
-### 낮음 (단순 표현 컴포넌트)
-- `Header.tsx`, `TabBar.tsx`, `Toast.tsx`, `LoginScreen.tsx`
+### 환경 변수 에러
 
----
+```
+# jest.setup.ts에 환경 변수가 설정되어 있는지 확인
+cat jest.setup.ts
+```
 
-## chrome API Mock 예시
+### TypeScript 컴파일 에러
 
-```typescript
-// test/setup.ts
-beforeEach(() => {
-  global.chrome = {
-    storage: {
-      local: {
-        get: vi.fn().mockResolvedValue({}),
-        set: vi.fn().mockResolvedValue(undefined),
-        remove: vi.fn().mockResolvedValue(undefined),
-      },
-    },
-    tabs: {
-      query: vi.fn().mockResolvedValue([{ url: 'https://example.com', title: 'Example' }]),
-      create: vi.fn(),
-    },
-    topSites: {
-      get: vi.fn().mockResolvedValue([]),
-    },
-    identity: {
-      launchWebAuthFlow: vi.fn(),
-      getRedirectURL: vi.fn(() => 'https://test-id.chromiumapp.org/'),
-    },
-  } as never
-})
+```bash
+# ts-jest 설정 확인
+cat jest.config.ts
+# tsconfig strict 모드와 ts-jest 호환성 확인
 ```
 
 ---
 
-## 현재 검증된 항목 (수동 검증)
+## 테스트 커버리지 목표
 
-| 항목 | 상태 | 검증 방법 |
-|------|------|-----------|
-| TypeScript 타입 체크 | ✅ | `npm run typecheck` 통과 |
-| 빌드 성공 | ✅ | `npm run build:dev` 통과 |
-| 번들 크기 (1MB 이하) | ✅ | 232KB (PERF-03 만족) |
-| 진단 에러 없음 | ✅ | `getDiagnostics` 클린 |
+| Service           | 목표 커버리지 | 주요 테스트 항목                            |
+| ----------------- | ------------- | ------------------------------------------- |
+| AuthService       | 80%+          | getUserFromToken, syncCognitoUser           |
+| BookmarkService   | 75%+          | create, getInbox, delete, importFromHtml    |
+| CollectionService | 75%+          | create, addBlock, reorderBlocks, updateSlug |
+| SearchService     | 70%+          | search (빈 쿼리, 정상 쿼리)                 |
+| TagService        | 80%+          | getOrCreate, autocomplete, setBookmarkTags  |

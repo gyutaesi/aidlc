@@ -1,0 +1,145 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  cognitoSub  String   @unique @map("cognito_sub")
+  email       String   @unique
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  bookmarks        Bookmark[]
+  groups           Group[]
+  collections      Collection[]
+  tags             Tag[]
+
+  @@map("users")
+}
+
+model Bookmark {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  url          String
+  title        String
+  description  String?
+  thumbnailUrl String?  @map("thumbnail_url")
+  memo         String?
+  isRead       Boolean  @default(false) @map("is_read")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookmarkTags BookmarkTag[]
+  bookmarkGroups BookmarkGroup[]
+
+  @@index([userId])
+  @@map("bookmarks")
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookmarkTags BookmarkTag[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("tags")
+}
+
+model BookmarkTag {
+  bookmarkId String @map("bookmark_id")
+  tagId      String @map("tag_id")
+
+  bookmark Bookmark @relation(fields: [bookmarkId], references: [id], onDelete: Cascade)
+  tag      Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([bookmarkId, tagId])
+  @@map("bookmark_tags")
+}
+
+model Group {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  name      String
+  emoji     String?
+  position  Int
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookmarkGroups BookmarkGroup[]
+
+  @@index([userId])
+  @@map("groups")
+}
+
+model BookmarkGroup {
+  bookmarkId String @map("bookmark_id")
+  groupId    String @map("group_id")
+  position   Int
+
+  bookmark Bookmark @relation(fields: [bookmarkId], references: [id], onDelete: Cascade)
+  group    Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@id([bookmarkId, groupId])
+  @@index([groupId])
+  @@map("bookmark_groups")
+}
+
+model Collection {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  name        String
+  emoji       String?
+  description String?
+  slug        String   @unique
+  isPublic    Boolean  @default(false) @map("is_public")
+  template    String   @default("guide") // 'guide' | 'profile'
+  viewCount   Int      @default(0) @map("view_count")
+  blocks      Json     @default("[]")
+  position    Int
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user             User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collectionLikes  CollectionLike[]
+  linkClicks       CollectionLinkClick[]
+
+  @@index([userId])
+  @@index([isPublic])
+  @@map("collections")
+}
+
+model CollectionLike {
+  id           String   @id @default(cuid())
+  collectionId String   @map("collection_id")
+  fingerprint  String
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, fingerprint], name: "collection_id_fingerprint")
+  @@map("collection_likes")
+}
+
+model CollectionLinkClick {
+  id           String   @id @default(cuid())
+  collectionId String   @map("collection_id")
+  blockId      String   @map("block_id")
+  clickedAt    DateTime @default(now()) @map("clicked_at")
+
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@index([collectionId, blockId])
+  @@map("collection_link_clicks")
+}
