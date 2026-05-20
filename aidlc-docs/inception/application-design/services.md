@@ -25,19 +25,19 @@
 [API Route / Server Action]
         |
         v
-[AuthService.getUserFromToken()]  ← JWT 검증
+[AuthService.getUserFromToken()]  ← JWT 검증 (Route Handler에서 DB 조회)
         |
         v
-[MetadataService.fetchMetadata(url)]  ← OG 태그 fetch (5초 타임아웃)
-        |
-        v
-[BookmarkService.create()]
+[BookmarkService.create(userId, input)]
+  ├── MetadataService.fetchMetadata(url)  ← OG 태그 fetch (5초 타임아웃)
   ├── TagService.getOrCreate() (태그가 있는 경우)
   └── Prisma: Bookmark + BookmarkTag INSERT
         |
         v
 [Response: 생성된 Bookmark]
 ```
+
+> **참고**: MetadataService는 BookmarkService 내부에서 호출합니다. Route Handler는 BookmarkService.create()만 호출하면 됩니다.
 
 ### 2.2 컬렉션 공유 페이지 조회 흐름 (비로그인 가능)
 
@@ -102,9 +102,11 @@
 ## 3. 외부 서비스 연동
 
 ### Amazon Cognito
-- **연동 위치**: `AuthService`, `middleware.ts`
-- **방식**: JWKS 공개키로 JWT 서명 검증 (공개키는 메모리 캐싱)
-- **사용 SDK**: `aws-jwt-verify` 또는 `jose` 라이브러리
+- **연동 위치**: `AuthService`(Node.js, Route Handler에서 호출), `middleware.ts`(Edge Runtime)
+- **방식**:
+  - Middleware(Edge): `jose` 라이브러리로 JWT 서명만 검증 (DB 조회 없음)
+  - Route Handler: `AuthService.getUserFromToken()`으로 토큰 파싱 + DB User 조회
+- **사용 SDK**: Middleware는 `jose`(Edge 호환), AuthService는 `aws-jwt-verify` 또는 `jose`
 
 ### Amazon S3 + CloudFront
 - **연동 위치**: `StorageService`
@@ -156,21 +158,27 @@ function withErrorHandler(handler: RouteHandler): RouteHandler {
 ## 5. 인증 컨텍스트 패턴
 
 ```typescript
-// Middleware: 보호 경로 일괄 검증
+// Middleware: Edge Runtime — JWT 서명 검증만 (jose 사용, DB 조회 없음)
 // middleware.ts
 export async function middleware(request: NextRequest) {
   const token = request.headers.get('Authorization')?.replace('Bearer ', '')
                ?? request.cookies.get('access_token')?.value
-  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  // JWT 검증 (AuthService 호출)
+  if (!token) {
+    if (request.nextUrl.pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+  // jose로 JWT 서명 검증만 (Edge 호환)
+  // DB 조회는 하지 않음
   ...
 }
 
-// Route Handler: AuthService로 User 조회
+// Route Handler: Node.js Runtime — AuthService로 User 조회
 // app/api/bookmarks/route.ts
 export const POST = withErrorHandler(async (req) => {
   const token = req.headers.get('Authorization')!.replace('Bearer ', '')
-  const user = await authService.getUserFromToken(token)
+  const user = await authService.getUserFromToken(token)  // DB 조회 포함
   const bookmark = await bookmarkService.create(user.id, await req.json())
   return NextResponse.json(bookmark, { status: 201 })
 })

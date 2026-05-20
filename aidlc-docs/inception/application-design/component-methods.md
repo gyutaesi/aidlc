@@ -74,6 +74,9 @@ delete(userId: string, groupId: string): Promise<void>
 // 그룹 내 북마크 순서 변경
 reorderBookmarks(userId: string, groupId: string, orderedBookmarkIds: string[]): Promise<void>
 
+// 그룹 컬럼 순서 변경 (대시보드 컬럼 드래그)
+reorderGroups(userId: string, orderedGroupIds: string[]): Promise<void>
+
 // 선택한 북마크들을 새 컬렉션의 링크 블록으로 복사 (그룹에서 제거 안 함)
 convertToCollection(userId: string, groupId: string, bookmarkIds: string[], collectionInput: CreateCollectionInput): Promise<Collection>
 
@@ -124,6 +127,9 @@ getPublicBySlug(slug: string): Promise<PublicCollection | null>
 
 // 컬렉션 단건 조회 (편집 페이지용)
 getById(userId: string, collectionId: string): Promise<Collection | null>
+
+// 컬렉션 목록 순서 변경
+reorderCollections(userId: string, orderedCollectionIds: string[]): Promise<void>
 
 // 사용자의 컬렉션 목록 조회
 getAll(userId: string): Promise<Collection[]>
@@ -231,6 +237,8 @@ isLoggedIn(): Promise<boolean>
 getTopSites(): Promise<chrome.topSites.MostVisitedURL[]>
 
 // 이미 저장된 북마크 URL 목록과 비교하여 미등록 사이트만 반환
+// savedUrls는 ExtensionApiClient로 GET /api/bookmarks?fields=url 호출하여 조달
+// 성능을 위해 URL 목록만 가져오는 경량 API 사용
 getUnregisteredSites(savedUrls: string[]): Promise<RecommendedSite[]>
 // RecommendedSite: { url: string, title: string }
 ```

@@ -64,7 +64,9 @@
   - `POST /api/bookmarks` — 북마크 저장 (Extension 포함)
   - `GET /api/bookmarks` — 북마크 목록 조회
   - `GET /api/bookmarks/recent` — 최근 저장 목록 (Extension 팝업용)
+  - `GET /api/bookmarks/urls` — 저장된 URL 목록만 조회 (Extension 추천 필터링용, 경량)
   - `GET /api/groups` — 그룹 목록 (Extension 팝업용)
+  - `GET /api/tags?prefix=` — 태그 자동완성
   - `GET /api/search` — 검색
   - `POST /api/collections/[id]/view` — 조회수 증가
   - `POST /api/collections/[id]/like` — 좋아요
@@ -93,8 +95,8 @@
 - **주요 메서드**: `getUserFromToken()`, `syncCognitoUser()`
 
 #### BookmarkService
-- **책임**: 북마크 CRUD, 인박스 관리, 그룹 이동, 컬렉션 이동, Import 처리
-- **주요 메서드**: `create()`, `update()`, `delete()`, `moveToGroup()`, `moveToCollection()`, `importFromHtml()`
+- **책임**: 북마크 CRUD, 인박스 관리, 그룹 이동, Import 처리
+- **주요 메서드**: `create()`, `update()`, `delete()`, `moveToGroup()`, `getAsLinkBlock()`, `getInbox()`, `getByGroup()`, `getRecent()`, `importFromHtml()`
 
 #### GroupService
 - **책임**: 그룹 CRUD, 그룹 내 북마크 순서 관리, 컬렉션 변환

@@ -135,6 +135,7 @@ moaring/
 │       ├── groups/
 │       ├── collections/
 │       ├── search/
+│       ├── tags/
 │       └── upload/
 ├── components/
 │   ├── ui/                       # 재사용 UI 컴포넌트
