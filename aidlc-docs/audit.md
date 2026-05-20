@@ -119,3 +119,11 @@
 **Context**: CONSTRUCTION PHASE - Unit 3 Chrome Extension - NFR Requirements (완료)
 
 ---
+
+## Construction Phase - Unit 3 NFR Design 완료
+**Timestamp**: 2026-05-20T00:50:00Z
+**User Input**: "네"
+**AI Response**: NFR Requirements 충분히 명확하여 추가 질문 없이 NFR Design 아티팩트 2개 생성. nfr-design-patterns.md (재시도/오프라인/병렬초기화/캐시/번들최적화/토큰생명주기/PKCE/Mock전환/에러표준화 패턴), logical-components.md (AppStore/AuthManager/ApiClient/TopSitesRecommender/SavedUrlCache 5개 논리 컴포넌트)
+**Context**: CONSTRUCTION PHASE - Unit 3 Chrome Extension - NFR Design (완료)
+
+---
