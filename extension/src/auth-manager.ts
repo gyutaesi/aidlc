@@ -11,6 +11,20 @@ const PREEMPTIVE_REFRESH_THRESHOLD_MS = 60_000 // 만료 60초 전 선제적 갱
 const COGNITO_DOMAIN = import.meta.env.VITE_COGNITO_DOMAIN
 const COGNITO_CLIENT_ID = import.meta.env.VITE_COGNITO_CLIENT_ID
 const COGNITO_REGION = import.meta.env.VITE_COGNITO_REGION
+const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true'
+
+// ─────────────────────────────────────────────────────────
+// Mock 로그인 (VITE_USE_MOCK=true일 때 사용)
+// ─────────────────────────────────────────────────────────
+
+const MOCK_AUTH_STATE: AuthState = {
+  accessToken: 'mock-access-token',
+  refreshToken: 'mock-refresh-token',
+  idToken: 'mock-id-token',
+  expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24시간 유효
+  userId: 'mock-user-id',
+  email: 'demo@moaring.com',
+}
 
 // ─────────────────────────────────────────────────────────
 // PKCE 유틸리티
@@ -132,6 +146,14 @@ export const AuthManager = {
    * Cognito Hosted UI를 통한 로그인 (PKCE 플로우)
    */
   async login(): Promise<AuthState> {
+    // Mock 모드: Cognito 건너뛰고 즉시 가짜 토큰 반환
+    if (USE_MOCK) {
+      // eslint-disable-next-line no-console
+      console.log('[AuthManager] Mock login (VITE_USE_MOCK=true)')
+      await writeAuthState(MOCK_AUTH_STATE)
+      return MOCK_AUTH_STATE
+    }
+
     if (!COGNITO_DOMAIN || !COGNITO_CLIENT_ID) {
       throw new AuthError('Cognito 설정이 누락되었습니다')
     }
@@ -223,6 +245,16 @@ export const AuthManager = {
    * Refresh Token으로 Access Token 갱신
    */
   async refreshToken(): Promise<string | null> {
+    // Mock 모드: 만료 시간만 연장하여 반환
+    if (USE_MOCK) {
+      const refreshed: AuthState = {
+        ...MOCK_AUTH_STATE,
+        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+      }
+      await writeAuthState(refreshed)
+      return refreshed.accessToken
+    }
+
     const state = await readAuthState()
     if (!state?.refreshToken) {
       await clearAuthState()

@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { AuthManager } from '../../auth-manager'
 import { useAppStore } from '../../store/useAppStore'
 
+const WEBAPP_URL = import.meta.env.VITE_WEBAPP_URL
+
 export function Header() {
   const authState = useAppStore((s) => s.authState)
   const setAuthState = useAppStore((s) => s.setAuthState)
@@ -13,12 +15,27 @@ export function Header() {
     setMenuOpen(false)
   }
 
+  const handleOpenWebapp = () => {
+    if (!WEBAPP_URL) return
+    chrome.tabs.create({ url: WEBAPP_URL })
+  }
+
   return (
     <header
       className="flex items-center justify-between px-4 py-3 border-b border-gray-200"
       data-testid="header"
     >
-      <div className="text-base font-bold text-moaring-primary">moaring</div>
+      <button
+        type="button"
+        onClick={handleOpenWebapp}
+        className="flex items-center gap-1 text-base font-bold text-moaring-primary hover:text-moaring-primary-hover transition-colors group"
+        aria-label="moaring 웹앱 열기"
+        title="moaring 웹앱 열기"
+        data-testid="header-open-webapp-button"
+      >
+        moaring
+        <ExternalLinkIcon />
+      </button>
 
       <div className="relative">
         <button
@@ -75,6 +92,26 @@ function SettingsIcon() {
     >
       <circle cx="12" cy="12" r="3" />
       <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>
+  )
+}
+
+function ExternalLinkIcon() {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="opacity-60 group-hover:opacity-100 transition-opacity"
+      aria-hidden="true"
+    >
+      <path d="M7 17 17 7" />
+      <path d="M7 7h10v10" />
     </svg>
   )
 }
