@@ -123,11 +123,11 @@
 | ID | 요구사항 | 우선순위 |
 |----|----------|----------|
 | FR-04-1 | 그룹 생성 (이름 + 이모지) | Must |
-| FR-04-2 | 그룹 수정 / 삭제 (삭제 시 소속 북마크는 인박스로 복귀) | Must |
+| FR-04-2 | 그룹 수정 / 삭제 (삭제 시 BookmarkGroup 레코드 삭제, 북마크 원본은 유지) | Must |
 | FR-04-3 | 개인 대시보드에서만 보임 (비공개) | Must |
 | FR-04-4 | Toby 스타일 컬럼 형태로 표시 | Must |
 | FR-04-5 | 그룹 내 북마크 순서 변경 (드래그 앤 드롭) | Must |
-| FR-04-6 | 그룹에서 링크를 선택해 컬렉션으로 변환 | Must |
+| FR-04-6 | 그룹에서 링크를 선택해 컬렉션으로 변환 (선택한 링크들이 새 컬렉션의 링크 블록으로 복사, 그룹에서는 제거하지 않음) | Must |
 
 ### FR-05. 컬렉션
 
@@ -142,7 +142,7 @@
 | FR-05-7 | 블록 삭제 | Must |
 | FR-05-8 | 블록 순서 드래그 앤 드롭으로 변경 | Must |
 | FR-05-9 | 공유 ON/OFF 토글 | Must |
-| FR-05-10 | 공개 URL 생성 (시스템 자동 생성 short ID, 사용자 커스텀 슬러그 수정 가능) | Must |
+| FR-05-10 | 공개 URL 생성 (시스템 자동 생성 short ID, 사용자 커스텀 슬러그 수정 가능, 실시간 중복 체크 후 중복 시 저장 거부) | Must |
 | FR-05-11 | 공유 페이지 템플릿 선택: 가이드 모드 (순서 있는 절차서) | Must |
 | FR-05-12 | 공유 페이지 템플릿 선택: 프로필 모드 (개인 소개 + 링크 나열) | Must |
 | FR-05-13 | 공유 페이지 조회수 + 링크 클릭수 통계 | Must |
@@ -154,14 +154,14 @@
 | ID | 요구사항 | 우선순위 |
 |----|----------|----------|
 | FR-06-1 | 단축키 Cmd+K로 검색 팝업 열기 | Must |
-| FR-06-2 | 제목 + URL + 메모 + 태그 + 컬렉션 블록 텍스트 전체 검색 | Must |
+| FR-06-2 | 제목 + URL + 메모 + 태그 + 컬렉션 블록 텍스트 전체 검색 (로그인한 본인 데이터만 검색 대상) | Must |
 | FR-06-3 | PostgreSQL tsvector + GIN 인덱스 기반 풀텍스트 검색 | Must |
 
 ### FR-07. 링크 상태 체크
 
 | ID | 요구사항 | 우선순위 |
 |----|----------|----------|
-| FR-07-1 | EventBridge Scheduler로 매일 1회 전체 링크 유효성 확인 | Must |
+| FR-07-1 | EventBridge Scheduler로 매일 1회 전체 사용자의 모든 북마크 링크 유효성 확인 | Must |
 | FR-07-2 | SQS 큐 + Lambda Worker로 배치 처리 | Must |
 | FR-07-3 | 404 / 접근 불가 링크에 "죽은 링크" 뱃지 표시 | Must |
 | FR-07-4 | 죽은 링크 발생 시 in-app 알림 표시 (이메일 알림은 Post-MVP) | Must |
@@ -202,7 +202,7 @@
 
 | ID | 요구사항 |
 |----|----------|
-| NFR-02-1 | 사용자별 데이터 완전 격리 (Row-level 접근 제어) |
+| NFR-02-1 | 사용자별 데이터 완전 격리 — 애플리케이션 레벨에서 모든 쿼리에 `WHERE user_id = ?` 강제 적용 (PostgreSQL RLS 미사용, Aurora Serverless v2 성능 고려) |
 | NFR-02-2 | HTTPS 전용 (CloudFront + ALB SSL 종료) |
 | NFR-02-3 | JWT 토큰 기반 인증, Access Token 만료 시간 설정 (기본 1시간) |
 | NFR-02-4 | Refresh Token으로 Access Token 자동 갱신 (Cognito 기본 제공, 만료 시 재로그인) |
@@ -276,10 +276,10 @@ User
 
 Bookmark
   ├── id, user_id, url, title, description, thumbnail_url
-  ├── status: inbox | classified  (classified = 그룹 또는 컬렉션에 속한 상태)
   ├── is_dead: boolean (링크 상태 체크 결과)
   ├── memo: string
   └── created_at, updated_at
+  (소속 여부는 status 필드 없이 BookmarkGroup 관계 테이블 존재 여부로 판단)
 
 BookmarkTag (북마크-태그 관계 테이블)
   ├── bookmark_id, tag_id
@@ -290,14 +290,14 @@ Tag
 
 Group
   ├── id, user_id, name, emoji, position
-  └── (삭제 시 소속 북마크는 inbox 상태로 복귀)
+  └── (삭제 시 BookmarkGroup 레코드 삭제 → 해당 북마크는 어느 그룹에도 미소속 상태로 전환)
 
 BookmarkGroup (북마크-그룹 관계 테이블)
   ├── bookmark_id, group_id, position
 
 Collection
   ├── id, user_id, name, emoji, description
-  ├── slug: string (공개 URL 식별자, 커스텀 가능, Unique)
+  ├── slug: string (공개 URL 식별자, 커스텀 가능, Unique — 중복 시 실시간 체크 후 저장 거부)
   ├── is_public: boolean
   ├── template: 'guide' | 'profile'
   ├── view_count: integer
@@ -305,7 +305,7 @@ Collection
   (삭제 시 링크 블록이 참조하는 북마크 원본은 유지)
 
 Block (JSONB 내 구조)
-  ├── id: string (블록 고유 ID, UUID)
+  ├── id: string (블록 고유 ID, UUID — JSONB 내 저장이므로 DB FK 없음, 앱 레벨 관리)
   ├── type: 'link' | 'text' | 'image'
   ├── position: number
   └── content: { bookmark_id?, url?, title?, description?, tags?, markdown?, image_url? }
@@ -314,7 +314,7 @@ CollectionLike (좋아요 중복 방지 테이블)
   ├── collection_id, fingerprint (IP + User-Agent 해시), created_at
 
 CollectionLinkClick (링크 클릭 통계 테이블)
-  ├── collection_id, block_id, clicked_at
+  ├── collection_id, block_id (text — JSONB block UUID 참조, 앱 레벨 관리), clicked_at
 ```
 
 ---
