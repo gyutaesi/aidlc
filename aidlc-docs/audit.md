@@ -87,3 +87,19 @@
 **Context**: INCEPTION - Units Generation (Completed) → CONSTRUCTION PHASE (Next)
 
 ---
+
+## Construction Phase - Unit 3 Chrome Extension 시작
+**Timestamp**: 2026-05-20T00:10:00Z
+**User Input**: "네"
+**AI Response**: Unit 3 Chrome Extension Construction Phase 시작. feature/unit3-chrome-extension 브랜치 생성 완료. Functional Design 단계 진입.
+**Context**: CONSTRUCTION PHASE - Unit 3 Chrome Extension - Functional Design (시작)
+
+---
+
+## Construction Phase - Unit 3 Functional Design 완료
+**Timestamp**: 2026-05-20T00:20:00Z
+**User Input**: "Q8은 5개로 해줘. 추가로 확인이 필요한 방법 1.B 2.추천해줘 3.A 4.B"
+**AI Response**: Q8 → A(5개)로 수정. 추가 질문 확정: Q15=B(팝업 자동 닫힘), Q16=B(높이 자동 최대 600px), Q17=A(설정 아이콘에 로그아웃), Q18=B(토스트 알림). Functional Design 아티팩트 4개 생성 완료: domain-entities.md, business-rules.md, business-logic-model.md, frontend-components.md
+**Context**: CONSTRUCTION PHASE - Unit 3 Chrome Extension - Functional Design (완료)
+
+---
