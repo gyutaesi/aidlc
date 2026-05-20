@@ -30,8 +30,8 @@ Extension이 직접 소유하지 않지만 런타임에 의존하는 외부 인�
 
 | 항목 | 내용 |
 |------|------|
-| 환경 | 로컬: `http://localhost:3000` / 프로덕션: `https://api.moaring.com` (예정) |
-| 프로토콜 | HTTPS (프로덕션), HTTP (로컬 개발) |
+| 환경 | 개발: Mock API (`VITE_USE_MOCK=true`) / 운영: `https://api.moaring.com` |
+| 프로토콜 | HTTPS (운영) |
 | 인증 | Cognito JWT — `Authorization: Bearer <access_token>` |
 | CORS | `chrome-extension://<extension-id>` origin 허용 필요 (Unit 2 설정) |
 | 사용 API | `POST /api/bookmarks`, `GET /api/bookmarks/recent`, `GET /api/bookmarks/urls`, `GET /api/groups` |
@@ -116,7 +116,7 @@ extension/
 **.env.development**:
 ```
 VITE_USE_MOCK=true
-VITE_API_BASE_URL=http://localhost:3000
+VITE_API_BASE_URL=https://api.moaring.com
 VITE_COGNITO_DOMAIN=<cognito-domain>
 VITE_COGNITO_CLIENT_ID=<app-client-id>
 VITE_COGNITO_REGION=ap-northeast-2

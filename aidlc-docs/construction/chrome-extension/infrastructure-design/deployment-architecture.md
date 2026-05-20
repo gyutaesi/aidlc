@@ -56,29 +56,7 @@
 
 ---
 
-### 2.2 개발 환경 (Phase 2 — 실제 API 연결)
-
-```
-[개발자 로컬]
-    |
-    ├── extension/
-    │   ├── .env.development  (VITE_USE_MOCK=false, API_BASE=localhost:3000)
-    │   └── dist/
-    |
-    ├── app/ (Unit 2 Next.js)
-    │   └── npm run dev → localhost:3000
-    |
-    └── Chrome (Developer mode)
-            |
-            ├── HTTPS → localhost:3000 (moaring API)
-            └── HTTPS → Cognito Hosted UI
-```
-
-**사용 시점**: Unit 2 핵심 API 완성 후. 실제 인증 + 저장 테스트.
-
----
-
-### 2.3 운영 환경 (MVP)
+### 2.2 운영 환경 (Phase 2 — 실제 API 연결)
 
 ```
 [개발자 로컬]
@@ -87,11 +65,13 @@
     │   ├── .env.production  (VITE_USE_MOCK=false, API_BASE=api.moaring.com)
     │   └── dist/            (npm run build)
     |
-    └── Chrome (Developer mode — 팀 내 배포)
+    └── Chrome (Developer mode)
             |
-            ├── HTTPS → api.moaring.com (ECS/Fargate)
+            ├── HTTPS → api.moaring.com (Unit 2 배포 완료 후)
             └── HTTPS → Cognito Hosted UI (ap-northeast-2)
 ```
+
+**사용 시점**: Unit 1 + Unit 2 배포 완료 후. Mock에서 실제 API로 전환.
 
 ---
 
@@ -148,7 +128,6 @@ extension/dist/
   ],
 
   "host_permissions": [
-    "http://localhost:3000/*",
     "https://api.moaring.com/*",
     "https://*.amazoncognito.com/*"
   ],
@@ -205,12 +184,11 @@ Hosted UI: 활성화 필요
 ```
 [ ] manifest.json에 key 필드 추가 (Extension ID 고정)
 [ ] Extension ID 확인 후 Cognito App Client redirect URI 등록
-[ ] .env.development 작성 (VITE_USE_MOCK=true로 시작)
+[ ] .env.development 작성 (VITE_USE_MOCK=true)
 [ ] npm run build:dev → Chrome Developer mode 로드 확인
 [ ] Mock API로 전체 플로우 테스트
-[ ] Unit 2 API 준비 후 VITE_USE_MOCK=false로 전환
-[ ] localhost:3000 연결 테스트 (인증 + 저장 + 추천)
-[ ] .env.production 작성
+[ ] Unit 1 + Unit 2 배포 완료 확인
+[ ] .env.production 작성 (VITE_USE_MOCK=false, api.moaring.com)
 [ ] npm run build → dist/ 크기 확인 (1MB 이하)
 [ ] 운영 환경 E2E 테스트
 ```
