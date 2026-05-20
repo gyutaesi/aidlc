@@ -37,7 +37,8 @@
 - [ ] User Stories - SKIP (요구사항이 충분히 상세함)
 - [x] Workflow Planning - Completed
 - [x] Application Design - Completed
-- [ ] Units Generation - EXECUTE
+- [x] Units Generation - Completed
+- **Next Stage**: CONSTRUCTION PHASE
 
 ### CONSTRUCTION PHASE (per unit)
 - [ ] Functional Design - EXECUTE
