@@ -245,4 +245,117 @@ Updated plan checkboxes and aidlc-state.md.
 Verified: npm install OK, tsc --noEmit OK, cdk synth OK (after fixing 2 warnings: containerInsights → containerInsightsV2, added circuitBreaker rollback).
 **Context**: CONSTRUCTION PHASE - Unit 1 Infrastructure - Code Generation (Completed)
 
+## Construction Phase - Unit 3 Chrome Extension 시작
+**Timestamp**: 2026-05-20T00:10:00Z
+**User Input**: "네"
+**AI Response**: Unit 3 Chrome Extension Construction Phase 시작. feature/unit3-chrome-extension 브랜치 생성 완료. Functional Design 단계 진입.
+**Context**: CONSTRUCTION PHASE - Unit 3 Chrome Extension - Functional Design (시작)
+
+---
+
+## Construction Phase - Unit 3 Functional Design 완료
+**Timestamp**: 2026-05-20T00:20:00Z
+**User Input**: "Q8은 5개로 해줘. 추가로 확인이 필요한 방법 1.B 2.추천해줘 3.A 4.B"
+**AI Response**: Q8 → A(5개)로 수정. 추가 질문 확정: Q15=B(팝업 자동 닫힘), Q16=B(높이 자동 최대 600px), Q17=A(설정 아이콘에 로그아웃), Q18=B(토스트 알림). Functional Design 아티팩트 4개 생성 완료: domain-entities.md, business-rules.md, business-logic-model.md, frontend-components.md
+**Context**: CONSTRUCTION PHASE - Unit 3 Chrome Extension - Functional Design (완료)
+
+---
+
+## Construction Phase - Unit 3 NFR Requirements 시작
+**Timestamp**: 2026-05-20T00:30:00Z
+**User Input**: "시작해"
+**AI Response**: NFR Requirements 질문 파일 생성 (chrome-extension-nfr-requirements-plan.md). 14개 질문 — 성능(3), 보안(3), 신뢰성(2), 유지보수성(2), 기술스택(4).
+**Context**: CONSTRUCTION PHASE - Unit 3 Chrome Extension - NFR Requirements (시작)
+
+---
+
+## Construction Phase - Unit 3 NFR Requirements 완료
+**Timestamp**: 2026-05-20T00:40:00Z
+**User Input**: "답변 완료" (Q7: D — GET 1회 재시도/POST 없음, Q5: A — 기본 MV3 CSP, Q10: B — strict false)
+**AI Response**: NFR Requirements 아티팩트 2개 생성 완료: nfr-requirements.md (성능/보안/신뢰성/유지보수성/사용성/호환성), tech-stack-decisions.md (React 18, Vite, TypeScript strict:false, npm, MV3)
+**Context**: CONSTRUCTION PHASE - Unit 3 Chrome Extension - NFR Requirements (완료)
+
+---
+
+## Construction Phase - Unit 3 NFR Design 완료
+**Timestamp**: 2026-05-20T00:50:00Z
+**User Input**: "네"
+**AI Response**: NFR Requirements 충분히 명확하여 추가 질문 없이 NFR Design 아티팩트 2개 생성. nfr-design-patterns.md (재시도/오프라인/병렬초기화/캐시/번들최적화/토큰생명주기/PKCE/Mock전환/에러표준화 패턴), logical-components.md (AppStore/AuthManager/ApiClient/TopSitesRecommender/SavedUrlCache 5개 논리 컴포넌트)
+**Context**: CONSTRUCTION PHASE - Unit 3 Chrome Extension - NFR Design (완료)
+
+---
+
+## Construction Phase - Unit 3 NFR Design 승인
+**Timestamp**: 2026-05-20T01:00:00Z
+**User Input**: "승인"
+**AI Response**: NFR Design 승인 완료. Infrastructure Design 단계 시작.
+**Context**: CONSTRUCTION PHASE - Unit 3 Chrome Extension - NFR Design (승인) → Infrastructure Design (시작)
+
+---
+
+## Construction Phase - Unit 3 Infrastructure Design 완료
+**Timestamp**: 2026-05-20T01:10:00Z
+**User Input**: "답변 완료" (Q1: A — CI/CD 없음, Q2: A — localhost:3000, Q3: B — manifest key 고정)
+**AI Response**: Infrastructure Design 아티팩트 2개 생성. infrastructure-design.md (외부 의존성/storage/Extension ID/빌드환경/배포절차), deployment-architecture.md (3단계 환경구성/manifest.json/Cognito 설정요구사항/전환체크리스트)
+**Context**: CONSTRUCTION PHASE - Unit 3 Chrome Extension - Infrastructure Design (완료)
+
+---
+
+## Construction Phase - Unit 3 Infrastructure Design 승인
+**Timestamp**: 2026-05-20T01:20:00Z
+**User Input**: "승인"
+**AI Response**: Infrastructure Design 승인 완료. Code Generation Part 1 (Planning) 시작.
+**Context**: CONSTRUCTION PHASE - Unit 3 Chrome Extension - Infrastructure Design (승인) → Code Generation (시작)
+
+---
+
+## Construction Phase - Unit 3 Code Generation Part 1 (Planning) 완료
+**Timestamp**: 2026-05-20T01:30:00Z
+**User Input**: N/A (자동 진행)
+**AI Response**: Code Generation Plan 생성 완료. 총 12개 Step, 약 35개 파일 생성 예정. Step 4(프로젝트 설정) → Step 5(AuthManager) → Step 6(ApiClient) → Step 7(TopSites/Cache) → Step 8(AppStore) → Step 9(SavePage) → Step 10(RecentList) → Step 11(Recommend) → Step 12(공통 UI) → Step 13(App.tsx) → Step 14(Mock) → Step 15(문서). 사용자 승인 대기.
+**Context**: CONSTRUCTION PHASE - Unit 3 Chrome Extension - Code Generation Part 1 (Planning 완료, 승인 대기)
+
+---
+
+## Construction Phase - Unit 3 Code Generation Plan 승인
+**Timestamp**: 2026-05-20T01:35:00Z
+**User Input**: "승인"
+**AI Response**: Code Generation Plan 승인 완료. Part 2 Generation 시작. Step 4(프로젝트 구조)부터 순차 진행.
+**Context**: CONSTRUCTION PHASE - Unit 3 Chrome Extension - Code Generation Part 2 (Generation 시작)
+
+---
+
+## Construction Phase - Unit 3 Code Generation 완료
+**Timestamp**: 2026-05-20T02:00:00Z
+**User Input**: N/A (자동 진행)
+**AI Response**: Unit 3 Chrome Extension 전체 코드 생성 완료. 약 35개 파일 생성. Step 4(설정) → 5(AuthManager) → 6(ApiClient) → 7(TopSites/Cache) → 8(AppStore) → 9-13(UI 컴포넌트) → 14(Mock) → 15(README/요약). 진단 검사 통과 (No diagnostics found).
+**Context**: CONSTRUCTION PHASE - Unit 3 Chrome Extension - Code Generation Part 2 완료
+
+---
+
+## Construction Phase - Unit 3 Code Generation 승인
+**Timestamp**: 2026-05-20T02:10:00Z
+**User Input**: "승인"
+**AI Response**: Code Generation 승인 완료. Unit 3 Chrome Extension의 모든 Construction 단계(Functional Design → NFR Requirements → NFR Design → Infrastructure Design → Code Generation) 완료. Build and Test는 Unit 1, 2 완료 후 통합 단계로 진행 예정.
+**Context**: CONSTRUCTION PHASE - Unit 3 Chrome Extension - 전체 단계 완료
+
+---
+
+## Construction Phase - Build and Test 시작 (Unit 3 단독)
+**Timestamp**: 2026-05-20T02:20:00Z
+**User Input**: "4번을 하고 완료 및 승인이 되면 1번을 진행하는걸로 하자"
+**AI Response**: Build and Test 단계 시작. Unit 1, 2 미구현 상태이므로 Unit 3 단독 빌드 검증 + 인스트럭션 파일 생성. 승인 후 PR 생성 예정.
+**Context**: CONSTRUCTION PHASE - Build and Test (Unit 3 only)
+
+---
+
+## Construction Phase - Build and Test 완료
+**Timestamp**: 2026-05-20T02:40:00Z
+**User Input**: N/A (자동 진행)
+**AI Response**: Build and Test 단계 완료. Unit 3 빌드 검증 통과 (typecheck pass, build success, 232KB < 1MB). 빌드 이슈 2건 수정 (vite-plugin-web-extension additionalInputs 제거, terser 추가). 5개 인스트럭션 문서 생성.
+**Build Status**: Success (Unit 3)
+**Test Status**: Pass (수동 검증 완료, 자동 테스트는 사용자 명시 요청 시 추가)
+**Files Generated**: build-instructions.md, unit-test-instructions.md, integration-test-instructions.md, performance-test-instructions.md, build-and-test-summary.md
+**Context**: CONSTRUCTION PHASE - Build and Test 완료
+
 ---
