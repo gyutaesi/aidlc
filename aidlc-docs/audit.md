@@ -127,3 +127,19 @@
 **Context**: CONSTRUCTION PHASE - Unit 3 Chrome Extension - NFR Design (완료)
 
 ---
+
+## Construction Phase - Unit 3 NFR Design 승인
+**Timestamp**: 2026-05-20T01:00:00Z
+**User Input**: "승인"
+**AI Response**: NFR Design 승인 완료. Infrastructure Design 단계 시작.
+**Context**: CONSTRUCTION PHASE - Unit 3 Chrome Extension - NFR Design (승인) → Infrastructure Design (시작)
+
+---
+
+## Construction Phase - Unit 3 Infrastructure Design 완료
+**Timestamp**: 2026-05-20T01:10:00Z
+**User Input**: "답변 완료" (Q1: A — CI/CD 없음, Q2: A — localhost:3000, Q3: B — manifest key 고정)
+**AI Response**: Infrastructure Design 아티팩트 2개 생성. infrastructure-design.md (외부 의존성/storage/Extension ID/빌드환경/배포절차), deployment-architecture.md (3단계 환경구성/manifest.json/Cognito 설정요구사항/전환체크리스트)
+**Context**: CONSTRUCTION PHASE - Unit 3 Chrome Extension - Infrastructure Design (완료)
+
+---
