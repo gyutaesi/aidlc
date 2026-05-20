@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>moaring - 팬시 디자인 ✨</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0a0f;
+      color: #ffffff;
+      overflow-x: hidden;
+    }
+
+    /* 애니메이션 배경 */
+    .animated-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      background:
+        linear-gradient(125deg, #0a0a0f 0%, #1a0b2e 25%, #16123f 50%, #0a0a0f 75%, #0a0a0f 100%);
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
+    }
+
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    /* 떠다니는 파티클 */
+    .particles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+    .particle {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: rgba(147, 51, 234, 0.6);
+      border-radius: 50%;
+      animation: float 20s infinite;
+      box-shadow: 0 0 10px rgba(147, 51, 234, 0.8);
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0) translateX(0) scale(1);
+        opacity: 0;
+      }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% {
+        transform: translateY(-100vh) translateX(50px) scale(0.5);
+        opacity: 0;
+      }
+    }
+
+    /* 메인 컨테이너 */
+    .container {
+      position: relative;
+      z-index: 2;
+      min-height: 100vh;
+      padding: 40px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* 헤더 */
+    .header {
+      text-align: center;
+      margin-bottom: 60px;
+      animation: fadeInDown 1s ease;
+    }
+
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .logo {
+      font-size: 56px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #a78bfa 0%, #ec4899 50%, #f59e0b 100%);
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientText 3s ease infinite;
+      margin-bottom: 16px;
+      letter-spacing: -0.02em;
+      text-shadow: 0 0 40px rgba(167, 139, 250, 0.5);
+    }
+
+    @keyframes gradientText {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    .tagline {
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.6);
+      font-weight: 500;
+    }
+
+    /* 앱 레이아웃 */
+    .app-wrapper {
+      perspective: 2000px;
+      width: 100%;
+      max-width: 1200px;
+    }
+
+    .app-container {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(20px);
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+      box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.5),
+        0 0 100px rgba(147, 51, 234, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+      animation: floatIn 1s ease 0.3s both;
+    }
+
+    @keyframes floatIn {
+      from {
+        opacity: 0;
+        transform: translateY(50px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .app-container:hover {
+      transform: translateY(-5px);
+      box-shadow:
+        0 30px 80px rgba(0, 0, 0, 0.6),
+        0 0 120px rgba(147, 51, 234, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    /* 탑바 */
+    .app-topbar {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .app-logo {
+      font-size: 18px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #a78bfa, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .search-box {
+      flex: 1;
+      max-width: 500px;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .search-box::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        45deg,
+        transparent,
+        rgba(147, 51, 234, 0.1),
+        transparent
+      );
+      transition: all 0.6s ease;
+      transform: rotate(0deg);
+    }
+
+    .search-box:hover::before {
+      transform: rotate(180deg);
+    }
+
+    .search-box:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(147, 51, 234, 0.5);
+      box-shadow: 0 0 20px rgba(147, 51, 234, 0.3);
+    }
+
+    .search-box input {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 14px;
+    }
+
+    .search-box input::placeholder {
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    /* 메인 콘텐츠 */
+    .app-main {
+      display: flex;
+      min-height: 500px;
+    }
+
+    /* 사이드바 */
+    .sidebar {
+      width: 250px;
+      background: rgba(255, 255, 255, 0.02);
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .nav-item {
+      padding: 12px 16px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .nav-item::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 0;
+      height: 100%;
+      background: linear-gradient(90deg, rgba(147, 51, 234, 0.3), transparent);
+      transition: width 0.3s ease;
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.9);
+      transform: translateX(4px);
+    }
+
+    .nav-item:hover::before {
+      width: 100%;
+    }
+
+    .nav-item.active {
+      background: linear-gradient(135deg, rgba(147, 51, 234, 0.3), rgba(236, 72, 153, 0.2));
+      color: #ffffff;
+      box-shadow:
+        0 4px 15px rgba(147, 51, 234, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    .nav-icon {
+      font-size: 18px;
+      filter: drop-shadow(0 0 8px rgba(147, 51, 234, 0.6));
+    }
+
+    /* 콘텐츠 영역 */
+    .content {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    .content-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .content-title {
+      font-size: 24px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #ffffff, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .add-btn {
+      padding: 10px 20px;
+      background: linear-gradient(135deg, #9333ea, #ec4899);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(147, 51, 234, 0.4);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .add-btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: width 0.5s ease, height 0.5s ease;
+    }
+
+    .add-btn:hover::before {
+      width: 300px;
+      height: 300px;
+    }
+
+    .add-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 25px rgba(147, 51, 234, 0.6);
+    }
+
+    .add-btn span {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* 북마크 그리드 */
+    .bookmarks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .bookmark-card {
+      background: rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+      position: relative;
+      overflow: hidden;
+      transform-style: preserve-3d;
+    }
+
+    .bookmark-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(
+        circle,
+        rgba(147, 51, 234, 0.1) 0%,
+        transparent 70%
+      );
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .bookmark-card:hover::before {
+      opacity: 1;
+      animation: rotate 3s linear infinite;
+    }
+
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .bookmark-card:hover {
+      transform: translateY(-10px) scale(1.02);
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(147, 51, 234, 0.5);
+      box-shadow:
+        0 20px 40px rgba(0, 0, 0, 0.4),
+        0 0 30px rgba(147, 51, 234, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    .bookmark-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #9333ea, #ec4899);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 15px rgba(147, 51, 234, 0.4);
+      transition: all 0.3s ease;
+    }
+
+    .bookmark-card:hover .bookmark-icon {
+      transform: scale(1.1) rotate(5deg);
+      box-shadow: 0 8px 25px rgba(147, 51, 234, 0.6);
+    }
+
+    .bookmark-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 8px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .bookmark-desc {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.6);
+      line-height: 1.5;
+      margin-bottom: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .bookmark-meta {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.4);
+      position: relative;
+      z-index: 1;
+    }
+
+    .tag {
+      padding: 4px 10px;
+      background: rgba(147, 51, 234, 0.2);
+      border: 1px solid rgba(147, 51, 234, 0.4);
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #a78bfa;
+      transition: all 0.3s ease;
+    }
+
+    .bookmark-card:hover .tag {
+      background: rgba(147, 51, 234, 0.4);
+      border-color: rgba(147, 51, 234, 0.6);
+      box-shadow: 0 0 10px rgba(147, 51, 234, 0.4);
+    }
+
+    /* 스크롤바 */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #9333ea, #ec4899);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, #a855f7, #f472b6);
+    }
+
+    /* 반응형 */
+    @media (max-width: 768px) {
+      .app-main {
+        flex-direction: column;
+      }
+      .sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .bookmarks-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 애니메이션 배경 -->
+  <div class="animated-bg"></div>
+
+  <!-- 떠다니는 파티클 -->
+  <div class="particles" id="particles"></div>
+
+  <!-- 메인 컨테이너 -->
+  <div class="container">
+    <!-- 헤더 -->
+    <div class="header">
+      <div class="logo">moaring</div>
+      <div class="tagline">북마크를 아름답게 관리하세요 ✨</div>
+    </div>
+
+    <!-- 앱 래퍼 -->
+    <div class="app-wrapper">
+      <div class="app-container" id="app">
+        <!-- 탑바 -->
+        <div class="app-topbar">
+          <div class="app-logo">moaring</div>
+          <div class="search-box">
+            <span>🔍</span>
+            <input type="text" placeholder="북마크 검색..." />
+          </div>
+        </div>
+
+        <!-- 메인 -->
+        <div class="app-main">
+          <!-- 사이드바 -->
+          <div class="sidebar">
+            <div class="nav-item active">
+              <span class="nav-icon">🏠</span>
+              <span>전체</span>
+            </div>
+            <div class="nav-item">
+              <span class="nav-icon">⭐</span>
+              <span>즐겨찾기</span>
+            </div>
+            <div class="nav-item">
+              <span class="nav-icon">📚</span>
+              <span>개발 리소스</span>
+            </div>
+            <div class="nav-item">
+              <span class="nav-icon">🎨</span>
+              <span>디자인</span>
+            </div>
+            <div class="nav-item">
+              <span class="nav-icon">💡</span>
+              <span>아이디어</span>
+            </div>
+          </div>
+
+          <!-- 콘텐츠 -->
+          <div class="content">
+            <div class="content-header">
+              <div class="content-title">최근 북마크</div>
+              <button class="add-btn">
+                <span>+ 새 북마크</span>
+              </button>
+            </div>
+
+            <div class="bookmarks-grid">
+              <div class="bookmark-card">
+                <div class="bookmark-icon">💻</div>
+                <div class="bookmark-title">GitHub - 오픈소스 플랫폼</div>
+                <div class="bookmark-desc">세계 최대 규모의 개발자 커뮤니티와 코드 호스팅 서비스</div>
+                <div class="bookmark-meta">
+                  <span class="tag">개발</span>
+                  <span>5분 전</span>
+                </div>
+              </div>
+
+              <div class="bookmark-card">
+                <div class="bookmark-icon">🎨</div>
+                <div class="bookmark-title">Figma - 협업 디자인 툴</div>
+                <div class="bookmark-desc">실시간 협업이 가능한 클라우드 기반 UI/UX 디자인 도구</div>
+                <div class="bookmark-meta">
+                  <span class="tag">디자인</span>
+                  <span>1시간 전</span>
+                </div>
+              </div>
+
+              <div class="bookmark-card">
+                <div class="bookmark-icon">🚀</div>
+                <div class="bookmark-title">Vercel - 배포 플랫폼</div>
+                <div class="bookmark-desc">Next.js를 만든 팀의 빠르고 안정적인 프론트엔드 배포 서비스</div>
+                <div class="bookmark-meta">
+                  <span class="tag">개발</span>
+                  <span>어제</span>
+                </div>
+              </div>
+
+              <div class="bookmark-card">
+                <div class="bookmark-icon">📝</div>
+                <div class="bookmark-title">Notion - 올인원 워크스페이스</div>
+                <div class="bookmark-desc">노트, 문서, 프로젝트 관리를 한 곳에서</div>
+                <div class="bookmark-meta">
+                  <span class="tag">생산성</span>
+                  <span>2일 전</span>
+                </div>
+              </div>
+
+              <div class="bookmark-card">
+                <div class="bookmark-icon">🎬</div>
+                <div class="bookmark-title">YouTube - 동영상 플랫폼</div>
+                <div class="bookmark-desc">전 세계의 동영상 콘텐츠를 감상하고 공유하세요</div>
+                <div class="bookmark-meta">
+                  <span class="tag">미디어</span>
+                  <span>3일 전</span>
+                </div>
+              </div>
+
+              <div class="bookmark-card">
+                <div class="bookmark-icon">⚡</div>
+                <div class="bookmark-title">Tailwind CSS - CSS 프레임워크</div>
+                <div class="bookmark-desc">유틸리티 퍼스트 CSS 프레임워크로 빠른 UI 개발</div>
+                <div class="bookmark-meta">
+                  <span class="tag">개발</span>
+                  <span>1주 전</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 파티클 생성
+    const particlesContainer = document.getElementById('particles');
+    for (let i = 0; i < 50; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'particle';
+      particle.style.left = Math.random() * 100 + '%';
+      particle.style.animationDelay = Math.random() * 20 + 's';
+      particle.style.animationDuration = (15 + Math.random() * 10) + 's';
+      particlesContainer.appendChild(particle);
+    }
+
+    // 3D 카드 효과 (마우스 따라 기울어짐)
+    const app = document.getElementById('app');
+    app.addEventListener('mousemove', (e) => {
+      const rect = app.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      const rotateX = (y - centerY) / 30;
+      const rotateY = (centerX - x) / 30;
+
+      app.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-5px)`;
+    });
+
+    app.addEventListener('mouseleave', () => {
+      app.style.transform = 'rotateX(0) rotateY(0) translateY(0)';
+    });
+
+    // 북마크 카드 개별 3D 효과
+    const cards = document.querySelectorAll('.bookmark-card');
+    cards.forEach(card => {
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        const rotateX = (y - centerY) / 10;
+        const rotateY = (centerX - x) / 10;
+
+        card.style.transform = `translateY(-10px) scale(1.02) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+      });
+
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = 'translateY(0) scale(1) rotateX(0) rotateY(0)';
+      });
+    });
+
+    // 검색창 입력시 효과
+    const searchInput = document.querySelector('.search-box input');
+    searchInput.addEventListener('focus', () => {
+      document.querySelector('.search-box').style.transform = 'scale(1.02)';
+    });
+    searchInput.addEventListener('blur', () => {
+      document.querySelector('.search-box').style.transform = 'scale(1)';
+    });
+  </script>
+</body>
+</html>
