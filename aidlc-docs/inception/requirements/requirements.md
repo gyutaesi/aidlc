@@ -1,4 +1,4 @@
-# moaling — 요구사항 문서 (Requirements Document)
+# moaring — 요구사항 문서 (Requirements Document)
 
 > **버전**: 1.0  
 > **작성일**: 2026-05-20  
@@ -10,7 +10,7 @@
 
 | 항목 | 내용 |
 |------|------|
-| **사용자 요청** | 링크를 저장하고, 개인 프로필이나 가이드로 만들어 공유하는 북마크 매니저 "moaling" 신규 개발 |
+| **사용자 요청** | 링크를 저장하고, 개인 프로필이나 가이드로 만들어 공유하는 북마크 매니저 "moaring" 신규 개발 |
 | **요청 유형** | New Project (Greenfield) |
 | **범위 추정** | System-wide — 웹 앱 + Chrome Extension + AWS 인프라 |
 | **복잡도 추정** | Complex — 다중 컴포넌트, 공유 페이지, 스케줄러, 파일 업로드, 외부 API 연동 |

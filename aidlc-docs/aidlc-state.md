@@ -1,7 +1,7 @@
 # AI-DLC State Tracking
 
 ## Project Information
-- **Project Name**: moaling
+- **Project Name**: moaring
 - **Project Type**: Greenfield
 - **Start Date**: 2026-05-20T00:00:00Z
 - **Current Phase**: INCEPTION

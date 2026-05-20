@@ -3,7 +3,7 @@
 ## Initial User Request
 **Timestamp**: 2026-05-20T00:00:00Z
 **User Input**: "ai-dlc 할건데, /Users/gyutae/workspace/ai-dlc/input/input.md파일 읽고 시작해줘 한글로 진행해줘"
-**AI Response**: Loaded input.md (moaling - 북마크 매니저 요구사항 문서). Displayed welcome message in Korean. Proceeded to Workspace Detection.
+**AI Response**: Loaded input.md (moaring - 북마크 매니저 요구사항 문서). Displayed welcome message in Korean. Proceeded to Workspace Detection.
 **Context**: Workflow start
 
 ---
