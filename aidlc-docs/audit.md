@@ -103,3 +103,19 @@
 **Context**: CONSTRUCTION PHASE - Unit 3 Chrome Extension - Functional Design (완료)
 
 ---
+
+## Construction Phase - Unit 3 NFR Requirements 시작
+**Timestamp**: 2026-05-20T00:30:00Z
+**User Input**: "시작해"
+**AI Response**: NFR Requirements 질문 파일 생성 (chrome-extension-nfr-requirements-plan.md). 14개 질문 — 성능(3), 보안(3), 신뢰성(2), 유지보수성(2), 기술스택(4).
+**Context**: CONSTRUCTION PHASE - Unit 3 Chrome Extension - NFR Requirements (시작)
+
+---
+
+## Construction Phase - Unit 3 NFR Requirements 완료
+**Timestamp**: 2026-05-20T00:40:00Z
+**User Input**: "답변 완료" (Q7: D — GET 1회 재시도/POST 없음, Q5: A — 기본 MV3 CSP, Q10: B — strict false)
+**AI Response**: NFR Requirements 아티팩트 2개 생성 완료: nfr-requirements.md (성능/보안/신뢰성/유지보수성/사용성/호환성), tech-stack-decisions.md (React 18, Vite, TypeScript strict:false, npm, MV3)
+**Context**: CONSTRUCTION PHASE - Unit 3 Chrome Extension - NFR Requirements (완료)
+
+---
