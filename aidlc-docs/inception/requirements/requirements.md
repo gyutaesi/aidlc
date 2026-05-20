@@ -60,7 +60,7 @@
 [ALB (Application Load Balancer)]
         |
         v
-[ECS/Fargate: Next.js 앱]
+[ECS/Fargate: Next.js 앱] ←── [Amazon Cognito User Pool: 인증]
         |
         v
 [Aurora PostgreSQL Serverless v2]
@@ -73,8 +73,8 @@
         v
 [SQS: 링크 체크 큐] → [Lambda Worker]
 
-[Amazon SES: 이메일 발송]
 [Amazon ECR: 컨테이너 이미지]
+(Amazon SES: Post-MVP — Cognito 커스텀 이메일 발신자 연동)
 ```
 
 ---
@@ -102,7 +102,8 @@
 | FR-02-2 | 메타데이터 fetch 실패 시 사용자 수동 입력 가능 | Must |
 | FR-02-3 | 저장 즉시 인박스로 이동 | Must |
 | FR-02-4 | 저장 시 태그 추가 가능 (자유 입력, 사용자별 태그 목록 자동 누적) | Must |
-| FR-02-5 | 크롬 북마크 HTML 파일 업로드 → 자동 파싱 → 인박스 일괄 추가 | Must |
+| FR-02-5 | 저장된 북마크 제목/설명/태그/메모 수정 | Must |
+| FR-02-6 | 크롬 북마크 HTML 파일 업로드 → 자동 파싱 → 인박스 일괄 추가 | Must |
 
 ### FR-03. 인박스
 
@@ -113,6 +114,8 @@
 | FR-03-3 | 인박스 아이템 → 그룹으로 이동 | Must |
 | FR-03-4 | 인박스 아이템 → 컬렉션으로 이동 | Must |
 | FR-03-5 | 인박스 아이템 삭제 | Must |
+| FR-03-6 | 인박스 정렬 (최신순 / 오래된순) | Must |
+| FR-03-7 | 인박스 필터 (읽음 / 미읽음) | Must |
 
 ### FR-04. 그룹
 
@@ -122,7 +125,8 @@
 | FR-04-2 | 그룹 수정 / 삭제 | Must |
 | FR-04-3 | 개인 대시보드에서만 보임 (비공개) | Must |
 | FR-04-4 | Toby 스타일 컬럼 형태로 표시 | Must |
-| FR-04-5 | 그룹에서 링크를 선택해 컬렉션으로 변환 | Must |
+| FR-04-5 | 그룹 내 북마크 순서 변경 (드래그 앤 드롭) | Must |
+| FR-04-6 | 그룹에서 링크를 선택해 컬렉션으로 변환 | Must |
 
 ### FR-05. 컬렉션
 
@@ -133,13 +137,15 @@
 | FR-05-3 | 블록 추가: 링크 블록 (URL + 설명 + 태그) | Must |
 | FR-05-4 | 블록 추가: 텍스트 블록 (마크다운 간단 메모) | Must |
 | FR-05-5 | 블록 추가: 이미지 블록 (S3 업로드 또는 URL) | Must |
-| FR-05-6 | 블록 순서 드래그 앤 드롭으로 변경 | Must |
-| FR-05-7 | 공유 ON/OFF 토글 | Must |
-| FR-05-8 | 공개 URL 생성 (시스템 자동 생성 short ID, 사용자 커스텀 슬러그 수정 가능) | Must |
-| FR-05-9 | 공유 페이지 템플릿 선택: 가이드 모드 (순서 있는 절차서) | Must |
-| FR-05-10 | 공유 페이지 템플릿 선택: 프로필 모드 (개인 소개 + 링크 나열) | Must |
-| FR-05-11 | 공유 페이지 조회수 + 링크 클릭수 통계 | Must |
-| FR-05-12 | 공유 페이지 좋아요 (익명 가능) | Must |
+| FR-05-6 | 블록 수정 (내용 편집) | Must |
+| FR-05-7 | 블록 삭제 | Must |
+| FR-05-8 | 블록 순서 드래그 앤 드롭으로 변경 | Must |
+| FR-05-9 | 공유 ON/OFF 토글 | Must |
+| FR-05-10 | 공개 URL 생성 (시스템 자동 생성 short ID, 사용자 커스텀 슬러그 수정 가능) | Must |
+| FR-05-11 | 공유 페이지 템플릿 선택: 가이드 모드 (순서 있는 절차서) | Must |
+| FR-05-12 | 공유 페이지 템플릿 선택: 프로필 모드 (개인 소개 + 링크 나열) | Must |
+| FR-05-13 | 공유 페이지 조회수 + 링크 클릭수 통계 | Must |
+| FR-05-14 | 공유 페이지 좋아요 (익명 가능) | Must |
 
 ### FR-06. 빠른 검색
 
@@ -167,7 +173,7 @@
 | FR-08-4 | 자동 추천 원클릭 인박스 추가 | Must |
 | FR-08-5 | AI 기반 자동 추천 — **MVP 제외, 추후 Google Gemini로 추가 예정** | Post-MVP |
 | FR-08-6 | 최근 저장 목록 표시 | Must |
-| FR-08-7 | Extension 로그인 (계정 연동) | Must |
+| FR-08-7 | Extension 로그인: Cognito Hosted UI 또는 직접 API 호출 방식으로 인증, `chrome.storage.local`에 토큰 안전 저장 | Must |
 | FR-08-8 | MV3 매니페스트, Developer mode 배포 (MVP), 추후 Chrome Web Store 정식 배포 | Must |
 
 ### FR-09. 데이터 내보내기 (Export)
@@ -195,10 +201,11 @@
 |----|----------|
 | NFR-02-1 | 사용자별 데이터 완전 격리 (Row-level 접근 제어) |
 | NFR-02-2 | HTTPS 전용 (CloudFront + ALB SSL 종료) |
-| NFR-02-3 | JWT 토큰 기반 인증, 만료 시간 설정 |
-| NFR-02-4 | S3 버킷 퍼블릭 직접 접근 차단, CloudFront OAC(Origin Access Control) 사용 |
-| NFR-02-5 | SQL Injection 방지 (Parameterized Query / ORM 사용) |
-| NFR-02-6 | XSS 방지 (마크다운 렌더링 시 sanitize 처리) |
+| NFR-02-3 | JWT 토큰 기반 인증, Access Token 만료 시간 설정 (기본 1시간) |
+| NFR-02-4 | Refresh Token으로 Access Token 자동 갱신 (Cognito 기본 제공, 만료 시 재로그인) |
+| NFR-02-5 | S3 버킷 퍼블릭 직접 접근 차단, CloudFront OAC(Origin Access Control) 사용 |
+| NFR-02-6 | SQL Injection 방지 (Parameterized Query / ORM 사용) |
+| NFR-02-7 | XSS 방지 (마크다운 렌더링 시 sanitize 처리) |
 
 > **참고**: Security Extension은 MVP에서 미적용 (Q27: B). 위 보안 요구사항은 기본 수준으로 적용.
 
@@ -260,19 +267,24 @@
 
 ```
 User
-  ├── id, email, password_hash, created_at
-  └── (인증: Next-Auth 세션)
+  ├── id (내부 PK), cognito_sub (Cognito User Pool Sub, Unique), email
+  └── created_at, updated_at
+  (비밀번호는 Cognito가 관리 — DB에 저장하지 않음)
 
 Bookmark
   ├── id, user_id, url, title, description, thumbnail_url
-  ├── status: inbox | grouped | archived
+  ├── status: inbox | grouped | in_collection | archived
   ├── is_dead: boolean (링크 상태 체크 결과)
   ├── tags: string[]
+  ├── memo: string (메모)
   └── created_at, updated_at
 
 Group
   ├── id, user_id, name, emoji, position
-  └── bookmarks: Bookmark[]
+  └── bookmark_groups: BookmarkGroup[] (북마크-그룹 관계, 순서 포함)
+
+BookmarkGroup (북마크-그룹 관계 테이블)
+  ├── bookmark_id, group_id, position
 
 Collection
   ├── id, user_id, name, emoji, description
@@ -283,9 +295,10 @@ Collection
   └── blocks: Block[] (JSONB)
 
 Block (JSONB 내 구조)
+  ├── id: string (블록 고유 ID)
   ├── type: 'link' | 'text' | 'image'
   ├── position: number
-  └── content: { url?, description?, tags?, markdown?, image_url? }
+  └── content: { url?, title?, description?, tags?, markdown?, image_url?, click_count? }
 
 Tag
   └── user_id, name (사용자별 자유 입력 누적)
