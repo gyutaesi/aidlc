@@ -18,15 +18,20 @@ export function GroupBookmarkItem({
   onMoveToInbox,
 }: GroupBookmarkItemProps) {
   const domain = (() => {
-    try { return new URL(bookmark.url).hostname } catch { return bookmark.url }
+    try {
+      return new URL(bookmark.url).hostname
+    } catch {
+      return bookmark.url
+    }
   })()
 
   return (
     <div
-      className="group flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent"
+      className="hover:bg-accent group flex items-center gap-2 rounded-md px-2 py-1.5"
       data-testid={`group-bookmark-item-${bookmark.id}`}
     >
       {/* 파비콘 */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={`https://www.google.com/s2/favicons?domain=${domain}&sz=16`}
         alt=""
@@ -68,7 +73,7 @@ export function GroupBookmarkItem({
         <Button
           variant="ghost"
           size="icon"
-          className="h-6 w-6 text-destructive hover:text-destructive"
+          className="text-destructive hover:text-destructive h-6 w-6"
           onClick={() => onDelete(bookmark.id)}
           title="삭제"
           data-testid={`group-bookmark-delete-${bookmark.id}`}

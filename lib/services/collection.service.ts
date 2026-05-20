@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import { NotFoundError, ConflictError } from '@/lib/errors'
 import { metadataService } from './metadata.service'
 import type { Collection } from '@prisma/client'
@@ -17,6 +18,15 @@ export interface Block {
 
 export interface PublicCollection extends Collection {
   ownerEmail: string
+}
+
+// Prisma JSONB ↔ Block[] 변환 헬퍼
+function toBlocks(json: Prisma.JsonValue): Block[] {
+  return json as unknown as Block[]
+}
+
+function fromBlocks(blocks: Block[]): Prisma.InputJsonValue {
+  return blocks as unknown as Prisma.InputJsonValue
 }
 
 export class CollectionService {
@@ -77,9 +87,13 @@ export class CollectionService {
   /**
    * 블록 추가 (두 경로: 기존 북마크 연결 또는 URL 직접 입력)
    */
-  async addBlock(userId: string, collectionId: string, blockInput: AddBlockInput): Promise<Collection> {
+  async addBlock(
+    userId: string,
+    collectionId: string,
+    blockInput: AddBlockInput
+  ): Promise<Collection> {
     const collection = await this.getById(userId, collectionId)
-    const blocks = collection.blocks as Block[]
+    const blocks = toBlocks(collection.blocks)
 
     const { customAlphabet } = await import('nanoid')
     const blockNanoid = customAlphabet('0123456789abcdefghijklmnopqrstuvwxyz', 8)
@@ -92,7 +106,8 @@ export class CollectionService {
       content = {
         bookmarkId: null,
         url: blockInput.content.url,
-        title: blockInput.content.title || metadata?.title || new URL(blockInput.content.url).hostname,
+        title:
+          blockInput.content.title || metadata?.title || new URL(blockInput.content.url).hostname,
         description: blockInput.content.description ?? metadata?.description ?? null,
         thumbnailUrl: metadata?.thumbnailUrl ?? null,
         tags: [],
@@ -108,7 +123,7 @@ export class CollectionService {
 
     return prisma.collection.update({
       where: { id: collectionId },
-      data: { blocks: [...blocks, newBlock] },
+      data: { blocks: fromBlocks([...blocks, newBlock]) },
     })
   }
 
@@ -122,41 +137,34 @@ export class CollectionService {
     content: Record<string, unknown>
   ): Promise<Collection> {
     const collection = await this.getById(userId, collectionId)
-    const blocks = collection.blocks as Block[]
+    const blocks = toBlocks(collection.blocks)
 
     const blockIndex = blocks.findIndex((b) => b.id === blockId)
     if (blockIndex === -1) throw new NotFoundError('Block')
 
-    const updatedBlocks = blocks.map((b) =>
-      b.id === blockId ? { ...b, content } : b
-    )
+    const updatedBlocks = blocks.map((b) => (b.id === blockId ? { ...b, content } : b))
 
     return prisma.collection.update({
       where: { id: collectionId },
-      data: { blocks: updatedBlocks },
+      data: { blocks: fromBlocks(updatedBlocks) },
     })
   }
 
   /**
    * 블록 삭제
    */
-  async deleteBlock(
-    userId: string,
-    collectionId: string,
-    blockId: string
-  ): Promise<Collection> {
+  async deleteBlock(userId: string, collectionId: string, blockId: string): Promise<Collection> {
     const collection = await this.getById(userId, collectionId)
-    const blocks = collection.blocks as Block[]
+    const blocks = toBlocks(collection.blocks)
 
     const filtered = blocks.filter((b) => b.id !== blockId)
     if (filtered.length === blocks.length) throw new NotFoundError('Block')
 
-    // position 재할당
     const reindexed = filtered.map((b, i) => ({ ...b, position: i }))
 
     return prisma.collection.update({
       where: { id: collectionId },
-      data: { blocks: reindexed },
+      data: { blocks: fromBlocks(reindexed) },
     })
   }
 
@@ -169,7 +177,7 @@ export class CollectionService {
     orderedBlockIds: string[]
   ): Promise<Collection> {
     const collection = await this.getById(userId, collectionId)
-    const blocks = collection.blocks as Block[]
+    const blocks = toBlocks(collection.blocks)
 
     const reordered = orderedBlockIds.map((id, index) => {
       const block = blocks.find((b) => b.id === id)
@@ -179,7 +187,7 @@ export class CollectionService {
 
     return prisma.collection.update({
       where: { id: collectionId },
-      data: { blocks: reordered },
+      data: { blocks: fromBlocks(reordered) },
     })
   }
 

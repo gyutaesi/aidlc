@@ -5,7 +5,11 @@ import { tagService } from './tag.service'
 import { NotFoundError } from '@/lib/errors'
 import { logger } from '@/lib/logger'
 import type { Bookmark, Tag } from '@prisma/client'
-import type { CreateBookmarkInput, UpdateBookmarkInput, InboxQueryInput } from '@/lib/schemas/bookmark.schema'
+import type {
+  CreateBookmarkInput,
+  UpdateBookmarkInput,
+  InboxQueryInput,
+} from '@/lib/schemas/bookmark.schema'
 
 export interface BookmarkWithTags extends Bookmark {
   tags: Tag[]
@@ -113,14 +117,18 @@ export class BookmarkService {
     })
 
     for (const collection of collections) {
-      const blocks = collection.blocks as Array<Record<string, unknown>>
+      const blocks = collection.blocks as unknown as Array<Record<string, unknown>>
       const hasRef = blocks.some(
-        (b) => b.type === 'link' && (b.content as Record<string, unknown>)?.bookmarkId === bookmarkId
+        (b) =>
+          b.type === 'link' && (b.content as Record<string, unknown>)?.bookmarkId === bookmarkId
       )
 
       if (hasRef) {
         const updatedBlocks = blocks.map((b) => {
-          if (b.type === 'link' && (b.content as Record<string, unknown>)?.bookmarkId === bookmarkId) {
+          if (
+            b.type === 'link' &&
+            (b.content as Record<string, unknown>)?.bookmarkId === bookmarkId
+          ) {
             return {
               ...b,
               content: { ...(b.content as Record<string, unknown>), bookmarkId: null },
@@ -130,7 +138,7 @@ export class BookmarkService {
         })
         await prisma.collection.update({
           where: { id: collection.id },
-          data: { blocks: updatedBlocks },
+          data: { blocks: updatedBlocks as unknown as never },
         })
       }
     }
@@ -171,7 +179,10 @@ export class BookmarkService {
   /**
    * 인박스 목록 조회 (어떤 그룹에도 미소속인 북마크)
    */
-  async getInbox(userId: string, options: InboxQueryInput): Promise<PaginatedResult<BookmarkWithTags>> {
+  async getInbox(
+    userId: string,
+    options: InboxQueryInput
+  ): Promise<PaginatedResult<BookmarkWithTags>> {
     const { sort, filter, page, limit } = options
 
     const where = {

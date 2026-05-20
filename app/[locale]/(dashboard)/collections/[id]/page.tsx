@@ -32,17 +32,14 @@ export default async function CollectionEditorPage({ params }: CollectionEditorP
           <h1 className="text-2xl font-bold">{collection.name}</h1>
         </div>
         {collection.description && (
-          <p className="mt-1 text-muted-foreground">{collection.description}</p>
+          <p className="text-muted-foreground mt-1">{collection.description}</p>
         )}
       </div>
 
       <CollectionHeader collection={collection} />
 
       <div className="mt-6">
-        <BlockList
-          collectionId={collection.id}
-          blocks={collection.blocks as Block[]}
-        />
+        <BlockList collectionId={collection.id} blocks={collection.blocks as unknown as Block[]} />
       </div>
     </div>
   )

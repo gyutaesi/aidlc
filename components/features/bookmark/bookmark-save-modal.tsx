@@ -12,7 +12,6 @@ import { Textarea } from '@/components/ui/textarea'
 import { TagInput } from '@/components/ui/tag-input'
 import { CreateBookmarkSchema, type CreateBookmarkInput } from '@/lib/schemas/bookmark.schema'
 import { createBookmarkAction } from '@/lib/actions/bookmark.actions'
-
 interface BookmarkSaveModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -21,6 +20,7 @@ interface BookmarkSaveModalProps {
 
 export function BookmarkSaveModal({ open, onOpenChange, defaultGroupId }: BookmarkSaveModalProps) {
   const t = useTranslations('bookmark')
+  const tCommon = useTranslations('common')
   const [isFetchingMeta, setIsFetchingMeta] = useState(false)
 
   const {
@@ -88,7 +88,11 @@ export function BookmarkSaveModal({ open, onOpenChange, defaultGroupId }: Bookma
           <DialogTitle>{t('save')}</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" data-testid="bookmark-save-form">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="space-y-4"
+          data-testid="bookmark-save-form"
+        >
           <div className="space-y-1">
             <label className="text-sm font-medium">{t('urlLabel')}</label>
             <Input
@@ -96,11 +100,11 @@ export function BookmarkSaveModal({ open, onOpenChange, defaultGroupId }: Bookma
               placeholder={t('urlPlaceholder')}
               data-testid="bookmark-url-input"
             />
-            {errors.url && <p className="text-xs text-destructive">{errors.url.message}</p>}
+            {errors.url && <p className="text-destructive text-xs">{errors.url.message}</p>}
           </div>
 
           {isFetchingMeta && (
-            <p className="text-xs text-muted-foreground" data-testid="bookmark-fetching-meta">
+            <p className="text-muted-foreground text-xs" data-testid="bookmark-fetching-meta">
               {t('fetchingMetadata')}
             </p>
           )}
@@ -141,14 +145,10 @@ export function BookmarkSaveModal({ open, onOpenChange, defaultGroupId }: Bookma
               onClick={() => onOpenChange(false)}
               data-testid="bookmark-save-cancel"
             >
-              {useTranslations('common')('cancel')}
+              {tCommon('cancel')}
             </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              data-testid="bookmark-save-submit"
-            >
-              {isSubmitting ? useTranslations('common')('loading') : t('save')}
+            <Button type="submit" disabled={isSubmitting} data-testid="bookmark-save-submit">
+              {isSubmitting ? tCommon('loading') : t('save')}
             </Button>
           </div>
         </form>

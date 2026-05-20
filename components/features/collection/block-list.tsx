@@ -3,19 +3,14 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslations } from 'next-intl'
-import { Pencil, Trash2, ExternalLink } from 'lucide-react'
+import { Trash2, ExternalLink } from 'lucide-react'
 import { DragDropList } from '@/components/ui/drag-drop-list'
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { AddBlockButton } from './add-block-button'
-import {
-  addBlockAction,
-  deleteBlockAction,
-  reorderBlocksAction,
-} from '@/lib/actions/collection.actions'
+import { deleteBlockAction, reorderBlocksAction } from '@/lib/actions/collection.actions'
 import type { Block } from '@/lib/services/collection.service'
-import type { AddBlockInput } from '@/lib/schemas/collection.schema'
 
 interface BlockListProps {
   collectionId: string
@@ -33,12 +28,15 @@ function isSafeUrl(url: string): boolean {
 
 function LinkBlockItem({ block }: { block: Block }) {
   const content = block.content as {
-    url: string; title: string; description?: string | null; tags?: string[]
+    url: string
+    title: string
+    description?: string | null
+    tags?: string[]
   }
   return (
     <div className="rounded-md border p-3" data-testid={`block-link-${block.id}`}>
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
+      <div className="flex items-start gap-2">
+        <div className="min-w-0 flex-1">
           <a
             href={isSafeUrl(content.url) ? content.url : '#'}
             target="_blank"
@@ -47,15 +45,17 @@ function LinkBlockItem({ block }: { block: Block }) {
             data-testid={`block-link-url-${block.id}`}
           >
             {content.title}
-            <ExternalLink className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
+            <ExternalLink className="text-muted-foreground h-3 w-3 flex-shrink-0" />
           </a>
           {content.description && (
-            <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{content.description}</p>
+            <p className="text-muted-foreground mt-1 line-clamp-2 text-xs">{content.description}</p>
           )}
           {content.tags && content.tags.length > 0 && (
             <div className="mt-1 flex flex-wrap gap-1">
               {content.tags.map((tag) => (
-                <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+                <Badge key={tag} variant="secondary" className="text-xs">
+                  {tag}
+                </Badge>
               ))}
             </div>
           )}
@@ -75,17 +75,20 @@ function TextBlockItem({ block }: { block: Block }) {
 }
 
 function ImageBlockItem({ block }: { block: Block }) {
-  const content = block.content as { imageUrl: string; alt?: string | null; caption?: string | null }
+  const content = block.content as {
+    imageUrl: string
+    alt?: string | null
+    caption?: string | null
+  }
   return (
     <div className="rounded-md border p-3" data-testid={`block-image-${block.id}`}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={content.imageUrl}
         alt={content.alt ?? ''}
         className="w-full rounded-md object-cover"
       />
-      {content.caption && (
-        <p className="mt-1 text-xs text-muted-foreground">{content.caption}</p>
-      )}
+      {content.caption && <p className="text-muted-foreground mt-1 text-xs">{content.caption}</p>}
     </div>
   )
 }
@@ -95,7 +98,6 @@ export function BlockList({ collectionId, blocks }: BlockListProps) {
   const [localBlocks, setLocalBlocks] = useState(blocks)
 
   async function handleReorder(orderedIds: string[]) {
-    // 낙관적 업데이트
     const reordered = orderedIds.map((id, i) => {
       const block = localBlocks.find((b) => b.id === id)!
       return { ...block, position: i }
@@ -104,27 +106,28 @@ export function BlockList({ collectionId, blocks }: BlockListProps) {
 
     const result = await reorderBlocksAction(collectionId, orderedIds)
     if (!result.success) {
-      setLocalBlocks(blocks) // 롤백
+      setLocalBlocks(blocks)
       toast.error(result.error)
     }
   }
 
   async function handleDeleteBlock(blockId: string) {
     const result = await deleteBlockAction(collectionId, blockId)
-    if (!result.success) toast.error(result.error)
-    else setLocalBlocks((prev) => prev.filter((b) => b.id !== blockId))
+    if (!result.success) {
+      toast.error(result.error)
+    } else {
+      setLocalBlocks((prev) => prev.filter((b) => b.id !== blockId))
+    }
   }
 
-  async function handleAddBlock(type: 'link' | 'text' | 'image') {
-    // 블록 추가는 별도 모달/폼에서 처리
-    // 여기서는 타입 선택 후 폼 열기 트리거
-    toast.info(`${type} 블록 추가 기능은 폼 모달에서 처리됩니다`)
+  function handleAddBlock(type: 'link' | 'text' | 'image') {
+    toast.info(`${type} 블록 추가 기능`)
   }
 
   return (
     <div className="space-y-4" data-testid="block-list">
       {localBlocks.length === 0 ? (
-        <div className="py-8 text-center text-muted-foreground" data-testid="block-list-empty">
+        <div className="text-muted-foreground py-8 text-center" data-testid="block-list-empty">
           <p className="text-sm">{t('empty')}</p>
           <p className="text-xs">{t('emptyDescription')}</p>
         </div>

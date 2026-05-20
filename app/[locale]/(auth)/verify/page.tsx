@@ -12,6 +12,7 @@ import { confirmSignUpAction } from '@/lib/actions/auth.actions'
 
 export default function VerifyPage() {
   const t = useTranslations('auth')
+  const tCommon = useTranslations('common')
   const router = useRouter()
   const searchParams = useSearchParams()
   const email = searchParams.get('email') ?? ''
@@ -44,7 +45,7 @@ export default function VerifyPage() {
       <div className="w-full max-w-sm space-y-6 p-6">
         <div className="text-center">
           <h1 className="text-xl font-bold">{t('emailVerification')}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">{t('verificationSent')}</p>
+          <p className="text-muted-foreground mt-2 text-sm">{t('verificationSent')}</p>
           {email && <p className="mt-1 text-sm font-medium">{email}</p>}
         </div>
 
@@ -59,7 +60,7 @@ export default function VerifyPage() {
               maxLength={6}
               data-testid="verify-code-input"
             />
-            {errors.code && <p className="text-xs text-destructive">{errors.code.message}</p>}
+            {errors.code && <p className="text-destructive text-xs">{errors.code.message}</p>}
           </div>
 
           <Button
@@ -68,7 +69,7 @@ export default function VerifyPage() {
             disabled={isSubmitting}
             data-testid="verify-submit-button"
           >
-            {isSubmitting ? useTranslations('common')('loading') : useTranslations('common')('confirm')}
+            {isSubmitting ? tCommon('loading') : tCommon('confirm')}
           </Button>
         </form>
       </div>

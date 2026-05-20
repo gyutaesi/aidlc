@@ -1,11 +1,14 @@
 import { AuthService } from '../auth.service'
-import { prisma } from '@/lib/prisma'
 import { NotFoundError, UnauthorizedError } from '@/lib/errors'
-import { mockDeep, mockReset } from 'jest-mock-extended'
 
 // Prisma 모킹
 jest.mock('@/lib/prisma', () => ({
-  prisma: mockDeep<typeof prisma>(),
+  prisma: {
+    user: {
+      findUnique: jest.fn(),
+      upsert: jest.fn(),
+    },
+  },
 }))
 
 // jose 모킹
@@ -14,13 +17,21 @@ jest.mock('jose', () => ({
   createRemoteJWKSet: jest.fn(() => ({})),
 }))
 
-const mockPrisma = prisma as jest.Mocked<typeof prisma>
+import { prisma } from '@/lib/prisma'
+
+const mockUser = {
+  id: 'user-1',
+  cognitoSub: 'cognito-sub-123',
+  email: 'test@example.com',
+  createdAt: new Date(),
+  updatedAt: new Date(),
+}
 
 describe('AuthService', () => {
   let authService: AuthService
 
   beforeEach(() => {
-    mockReset(mockPrisma)
+    jest.clearAllMocks()
     authService = new AuthService()
   })
 
@@ -30,15 +41,7 @@ describe('AuthService', () => {
       ;(jwtVerify as jest.Mock).mockResolvedValue({
         payload: { sub: 'cognito-sub-123' },
       })
-
-      const mockUser = {
-        id: 'user-1',
-        cognitoSub: 'cognito-sub-123',
-        email: 'test@example.com',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
+      ;(prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser)
 
       const result = await authService.getUserFromToken('valid-token')
       expect(result).toEqual(mockUser)
@@ -49,7 +52,7 @@ describe('AuthService', () => {
       ;(jwtVerify as jest.Mock).mockResolvedValue({
         payload: { sub: 'cognito-sub-unknown' },
       })
-      mockPrisma.user.findUnique.mockResolvedValue(null)
+      ;(prisma.user.findUnique as jest.Mock).mockResolvedValue(null)
 
       await expect(authService.getUserFromToken('valid-token')).rejects.toThrow(NotFoundError)
     })
@@ -64,18 +67,11 @@ describe('AuthService', () => {
 
   describe('syncCognitoUser', () => {
     it('새 User를 생성한다', async () => {
-      const mockUser = {
-        id: 'user-1',
-        cognitoSub: 'sub-123',
-        email: 'new@example.com',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
-      mockPrisma.user.upsert.mockResolvedValue(mockUser)
+      ;(prisma.user.upsert as jest.Mock).mockResolvedValue(mockUser)
 
       const result = await authService.syncCognitoUser('sub-123', 'new@example.com')
       expect(result).toEqual(mockUser)
-      expect(mockPrisma.user.upsert).toHaveBeenCalledWith({
+      expect(prisma.user.upsert).toHaveBeenCalledWith({
         where: { cognitoSub: 'sub-123' },
         create: { cognitoSub: 'sub-123', email: 'new@example.com' },
         update: { email: 'new@example.com' },

@@ -13,6 +13,7 @@ import { signUpAction } from '@/lib/actions/auth.actions'
 
 export default function SignupPage() {
   const t = useTranslations('auth')
+  const tCommon = useTranslations('common')
   const router = useRouter()
 
   const {
@@ -41,7 +42,7 @@ export default function SignupPage() {
       <div className="w-full max-w-sm space-y-6 p-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold">moaring</h1>
-          <p className="mt-2 text-sm text-muted-foreground">{t('signup')}</p>
+          <p className="text-muted-foreground mt-2 text-sm">{t('signup')}</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" data-testid="signup-form">
@@ -53,17 +54,15 @@ export default function SignupPage() {
               placeholder="you@example.com"
               data-testid="signup-email-input"
             />
-            {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+            {errors.email && <p className="text-destructive text-xs">{errors.email.message}</p>}
           </div>
 
           <div className="space-y-1">
             <label className="text-sm font-medium">{t('password')}</label>
-            <Input
-              {...register('password')}
-              type="password"
-              data-testid="signup-password-input"
-            />
-            {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
+            <Input {...register('password')} type="password" data-testid="signup-password-input" />
+            {errors.password && (
+              <p className="text-destructive text-xs">{errors.password.message}</p>
+            )}
           </div>
 
           <div className="space-y-1">
@@ -74,7 +73,7 @@ export default function SignupPage() {
               data-testid="signup-password-confirm-input"
             />
             {errors.passwordConfirm && (
-              <p className="text-xs text-destructive">{errors.passwordConfirm.message}</p>
+              <p className="text-destructive text-xs">{errors.passwordConfirm.message}</p>
             )}
           </div>
 
@@ -84,13 +83,17 @@ export default function SignupPage() {
             disabled={isSubmitting}
             data-testid="signup-submit-button"
           >
-            {isSubmitting ? useTranslations('common')('loading') : t('signup')}
+            {isSubmitting ? tCommon('loading') : t('signup')}
           </Button>
         </form>
 
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-center text-sm">
           {t('hasAccount')}{' '}
-          <Link href="/ko/login" className="text-primary hover:underline" data-testid="signup-login-link">
+          <Link
+            href="/ko/login"
+            className="text-primary hover:underline"
+            data-testid="signup-login-link"
+          >
             {t('login')}
           </Link>
         </p>

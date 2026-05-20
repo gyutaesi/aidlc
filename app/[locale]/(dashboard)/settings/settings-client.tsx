@@ -1,7 +1,6 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { signOutAction } from '@/lib/actions/auth.actions'
 
@@ -22,8 +21,10 @@ export function SettingsClient({ userEmail }: SettingsClientProps) {
       <section data-testid="settings-account">
         <h2 className="mb-4 text-lg font-semibold">{t('account')}</h2>
         <div className="rounded-lg border p-4">
-          <p className="text-sm text-muted-foreground">{t('email')}</p>
-          <p className="font-medium" data-testid="settings-email">{userEmail}</p>
+          <p className="text-muted-foreground text-sm">{t('email')}</p>
+          <p className="font-medium" data-testid="settings-email">
+            {userEmail}
+          </p>
         </div>
       </section>
 
@@ -51,11 +52,7 @@ export function SettingsClient({ userEmail }: SettingsClientProps) {
       {/* 로그아웃 */}
       <section>
         <form action={signOutAction}>
-          <Button
-            type="submit"
-            variant="destructive"
-            data-testid="logout-button"
-          >
+          <Button type="submit" variant="destructive" data-testid="logout-button">
             {t('logout')}
           </Button>
         </form>

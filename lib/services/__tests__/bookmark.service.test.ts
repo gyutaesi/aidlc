@@ -1,14 +1,36 @@
 import { BookmarkService } from '../bookmark.service'
-import { prisma } from '@/lib/prisma'
-import { metadataService } from '../metadata.service'
-import { tagService } from '../tag.service'
 import { NotFoundError } from '@/lib/errors'
-import { mockDeep, mockReset } from 'jest-mock-extended'
 
-jest.mock('@/lib/prisma', () => ({ prisma: mockDeep<typeof prisma>() }))
+jest.mock('@/lib/prisma', () => ({
+  prisma: {
+    bookmark: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+      count: jest.fn(),
+    },
+    bookmarkGroup: {
+      aggregate: jest.fn(),
+      create: jest.fn(),
+      findUnique: jest.fn(),
+    },
+    bookmarkTag: {
+      deleteMany: jest.fn(),
+      createMany: jest.fn(),
+    },
+    collection: {
+      findMany: jest.fn().mockResolvedValue([]),
+    },
+    $transaction: jest.fn(),
+  },
+}))
+
 jest.mock('../metadata.service', () => ({
   metadataService: { fetchMetadata: jest.fn() },
 }))
+
 jest.mock('../tag.service', () => ({
   tagService: {
     setBookmarkTags: jest.fn(),
@@ -17,7 +39,8 @@ jest.mock('../tag.service', () => ({
   },
 }))
 
-const mockPrisma = prisma as jest.Mocked<typeof prisma>
+import { prisma } from '@/lib/prisma'
+import { metadataService } from '../metadata.service'
 
 const mockBookmark = {
   id: 'bm-1',
@@ -36,7 +59,6 @@ describe('BookmarkService', () => {
   let bookmarkService: BookmarkService
 
   beforeEach(() => {
-    mockReset(mockPrisma)
     jest.clearAllMocks()
     bookmarkService = new BookmarkService()
   })
@@ -49,8 +71,10 @@ describe('BookmarkService', () => {
         thumbnailUrl: null,
         favicon: null,
       })
-      mockPrisma.bookmark.create.mockResolvedValue(mockBookmark)
-      mockPrisma.bookmarkGroup.aggregate.mockResolvedValue({ _max: { position: null } } as never)
+      ;(prisma.bookmark.create as jest.Mock).mockResolvedValue(mockBookmark)
+      ;(prisma.bookmarkGroup.aggregate as jest.Mock).mockResolvedValue({
+        _max: { position: null },
+      })
 
       const result = await bookmarkService.create('user-1', {
         url: 'https://example.com',
@@ -63,8 +87,10 @@ describe('BookmarkService', () => {
 
     it('OG fetch 실패 시에도 북마크를 생성한다', async () => {
       ;(metadataService.fetchMetadata as jest.Mock).mockResolvedValue(null)
-      mockPrisma.bookmark.create.mockResolvedValue(mockBookmark)
-      mockPrisma.bookmarkGroup.aggregate.mockResolvedValue({ _max: { position: null } } as never)
+      ;(prisma.bookmark.create as jest.Mock).mockResolvedValue(mockBookmark)
+      ;(prisma.bookmarkGroup.aggregate as jest.Mock).mockResolvedValue({
+        _max: { position: null },
+      })
 
       const result = await bookmarkService.create('user-1', {
         url: 'https://example.com',
@@ -78,10 +104,10 @@ describe('BookmarkService', () => {
 
   describe('getInbox', () => {
     it('인박스 북마크 목록을 반환한다', async () => {
-      mockPrisma.$transaction.mockResolvedValue([
+      ;(prisma.$transaction as jest.Mock).mockResolvedValue([
         [{ ...mockBookmark, bookmarkTags: [] }],
         1,
-      ] as never)
+      ])
 
       const result = await bookmarkService.getInbox('user-1', {
         sort: 'newest',
@@ -98,7 +124,7 @@ describe('BookmarkService', () => {
 
   describe('delete', () => {
     it('존재하지 않는 북마크 삭제 시 NotFoundError를 던진다', async () => {
-      mockPrisma.bookmark.findFirst.mockResolvedValue(null)
+      ;(prisma.bookmark.findFirst as jest.Mock).mockResolvedValue(null)
 
       await expect(bookmarkService.delete('user-1', 'non-existent')).rejects.toThrow(NotFoundError)
     })
@@ -106,12 +132,12 @@ describe('BookmarkService', () => {
 
   describe('markAsRead', () => {
     it('북마크를 읽음으로 표시한다', async () => {
-      mockPrisma.bookmark.findFirst.mockResolvedValue(mockBookmark)
-      mockPrisma.bookmark.update.mockResolvedValue({ ...mockBookmark, isRead: true })
+      ;(prisma.bookmark.findFirst as jest.Mock).mockResolvedValue(mockBookmark)
+      ;(prisma.bookmark.update as jest.Mock).mockResolvedValue({ ...mockBookmark, isRead: true })
 
       await bookmarkService.markAsRead('user-1', 'bm-1')
 
-      expect(mockPrisma.bookmark.update).toHaveBeenCalledWith({
+      expect(prisma.bookmark.update).toHaveBeenCalledWith({
         where: { id: 'bm-1' },
         data: { isRead: true },
       })
@@ -127,7 +153,7 @@ describe('BookmarkService', () => {
           <DT><A HREF="not-a-url">Invalid</A>
         </DL>
       `
-      mockPrisma.bookmark.create.mockResolvedValue(mockBookmark)
+      ;(prisma.bookmark.create as jest.Mock).mockResolvedValue(mockBookmark)
 
       const result = await bookmarkService.importFromHtml('user-1', html)
 

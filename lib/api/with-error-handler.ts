@@ -2,8 +2,9 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { AppError } from '@/lib/errors'
 import { logger } from '@/lib/logger'
 
-type RouteContext = { params: Record<string, string> }
-type RouteHandler = (req: NextRequest, ctx: RouteContext) => Promise<NextResponse>
+// Next.js 15 Route Handler 타입
+export type RouteContext = { params: Promise<Record<string, string>> }
+export type RouteHandler = (req: NextRequest, ctx: RouteContext) => Promise<NextResponse>
 
 export function withErrorHandler(handler: RouteHandler): RouteHandler {
   return async (req: NextRequest, ctx: RouteContext) => {

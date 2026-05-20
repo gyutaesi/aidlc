@@ -51,13 +51,13 @@ export default async function PublicCollectionPage({ params }: PublicCollectionP
               <h1 className="text-3xl font-bold">{collection.name}</h1>
             </div>
             {collection.description && (
-              <p className="mt-2 text-muted-foreground">{collection.description}</p>
+              <p className="text-muted-foreground mt-2">{collection.description}</p>
             )}
           </div>
         </div>
 
         {/* 통계 + 좋아요 */}
-        <div className="mt-4 flex items-center gap-4 text-sm text-muted-foreground">
+        <div className="text-muted-foreground mt-4 flex items-center gap-4 text-sm">
           <span data-testid="collection-view-count">{stats.viewCount} 조회</span>
           <span data-testid="collection-like-count">{stats.likeCount} 좋아요</span>
           <PublicLikeButton collectionId={collection.id} likeCount={stats.likeCount} />
@@ -66,7 +66,7 @@ export default async function PublicCollectionPage({ params }: PublicCollectionP
 
       {/* 블록 렌더링 */}
       <PublicBlockRenderer
-        blocks={collection.blocks as Block[]}
+        blocks={collection.blocks as unknown as Block[]}
         collectionId={collection.id}
         template={collection.template as 'guide' | 'profile'}
       />

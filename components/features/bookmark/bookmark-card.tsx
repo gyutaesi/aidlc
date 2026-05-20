@@ -19,7 +19,6 @@ interface BookmarkCardProps {
   onMarkAsRead: (id: string) => void
   onMarkAsUnread: (id: string) => void
   onMoveToGroup: (id: string) => void
-  onMoveToCollection: (id: string) => void
   onDelete: (id: string) => void
 }
 
@@ -28,16 +27,18 @@ export function BookmarkCard({
   onMarkAsRead,
   onMarkAsUnread,
   onMoveToGroup,
-  onMoveToCollection,
   onDelete,
 }: BookmarkCardProps) {
   const t = useTranslations('inbox')
   const domain = (() => {
-    try { return new URL(bookmark.url).hostname } catch { return bookmark.url }
+    try {
+      return new URL(bookmark.url).hostname
+    } catch {
+      return bookmark.url
+    }
   })()
 
   function handleLinkClick() {
-    // 자동 읽음 처리 (fire-and-forget)
     if (!bookmark.isRead) {
       onMarkAsRead(bookmark.id)
     }
@@ -46,7 +47,7 @@ export function BookmarkCard({
 
   return (
     <div
-      className="group relative rounded-lg border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
+      className="bg-card group relative rounded-lg border p-4 shadow-sm transition-shadow hover:shadow-md"
       data-testid={`bookmark-card-${bookmark.id}`}
     >
       {/* 미읽음 표시 */}
@@ -79,17 +80,23 @@ export function BookmarkCard({
         data-testid={`bookmark-title-${bookmark.id}`}
       >
         {bookmark.title}
-        <ExternalLink className="ml-1 inline h-3 w-3 text-muted-foreground" />
+        <ExternalLink className="text-muted-foreground ml-1 inline h-3 w-3" />
       </button>
 
       {/* 도메인 */}
-      <p className="mb-2 text-xs text-muted-foreground" data-testid={`bookmark-domain-${bookmark.id}`}>
+      <p
+        className="text-muted-foreground mb-2 text-xs"
+        data-testid={`bookmark-domain-${bookmark.id}`}
+      >
         {domain}
       </p>
 
       {/* 메모 미리보기 */}
       {bookmark.memo && (
-        <p className="mb-2 line-clamp-2 text-xs text-muted-foreground" data-testid={`bookmark-memo-${bookmark.id}`}>
+        <p
+          className="text-muted-foreground mb-2 line-clamp-2 text-xs"
+          data-testid={`bookmark-memo-${bookmark.id}`}
+        >
           {bookmark.memo}
         </p>
       )}
@@ -106,7 +113,7 @@ export function BookmarkCard({
       )}
 
       {/* 저장 날짜 */}
-      <p className="text-xs text-muted-foreground">
+      <p className="text-muted-foreground text-xs">
         {new Date(bookmark.createdAt).toLocaleDateString('ko-KR')}
       </p>
 
@@ -151,7 +158,7 @@ export function BookmarkCard({
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => onDelete(bookmark.id)}
-            className="text-destructive"
+            className="text-destructive focus:text-destructive"
             data-testid={`bookmark-delete-${bookmark.id}`}
           >
             <Trash2 className="mr-2 h-4 w-4" />
@@ -161,47 +168,4 @@ export function BookmarkCard({
       </DropdownMenu>
     </div>
   )
-}
-
-// DropdownMenu 컴포넌트 (shadcn/ui 스타일)
-function DropdownMenu({ children }: { children: React.ReactNode }) {
-  return <div className="relative">{children}</div>
-}
-
-function DropdownMenuTrigger({ asChild, children }: { asChild?: boolean; children: React.ReactNode }) {
-  return <>{children}</>
-}
-
-function DropdownMenuContent({ align, children }: { align?: string; children: React.ReactNode }) {
-  return (
-    <div className="absolute right-0 z-50 mt-1 min-w-[160px] rounded-md border bg-popover p-1 shadow-md">
-      {children}
-    </div>
-  )
-}
-
-function DropdownMenuItem({
-  onClick,
-  className,
-  children,
-  'data-testid': testId,
-}: {
-  onClick?: () => void
-  className?: string
-  children: React.ReactNode
-  'data-testid'?: string
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent ${className ?? ''}`}
-      data-testid={testId}
-    >
-      {children}
-    </button>
-  )
-}
-
-function DropdownMenuSeparator() {
-  return <div className="my-1 h-px bg-muted" />
 }

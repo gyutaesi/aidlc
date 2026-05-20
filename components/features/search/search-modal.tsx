@@ -81,10 +81,13 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg p-0" data-testid="search-modal">
         <div className="flex items-center border-b px-3">
-          <Search className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground" />
+          <Search className="text-muted-foreground mr-2 h-4 w-4 flex-shrink-0" />
           <Input
             value={query}
-            onChange={(e) => { setQuery(e.target.value); setSelectedIndex(0) }}
+            onChange={(e) => {
+              setQuery(e.target.value)
+              setSelectedIndex(0)
+            }}
             onKeyDown={handleKeyDown}
             placeholder={t('placeholder')}
             className="border-0 shadow-none focus-visible:ring-0"
@@ -93,35 +96,40 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
           />
           {query && (
             <button onClick={() => setQuery('')} data-testid="search-clear">
-              <X className="h-4 w-4 text-muted-foreground" />
+              <X className="text-muted-foreground h-4 w-4" />
             </button>
           )}
         </div>
 
         <div className="max-h-[400px] overflow-y-auto p-2" data-testid="search-results">
           {query && results.length === 0 && (
-            <p className="py-4 text-center text-sm text-muted-foreground" data-testid="search-empty">
+            <p
+              className="text-muted-foreground py-4 text-center text-sm"
+              data-testid="search-empty"
+            >
               {t('empty')}
             </p>
           )}
 
           {bookmarkResults.length > 0 && (
             <div className="mb-2">
-              <p className="mb-1 px-2 text-xs font-medium text-muted-foreground">{t('bookmarks')}</p>
-              {bookmarkResults.map((result, i) => (
+              <p className="text-muted-foreground mb-1 px-2 text-xs font-medium">
+                {t('bookmarks')}
+              </p>
+              {bookmarkResults.map((result) => (
                 <button
                   key={result.id}
-                  className={`flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-accent ${
+                  className={`hover:bg-accent flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm ${
                     results.indexOf(result) === selectedIndex ? 'bg-accent' : ''
                   }`}
                   onClick={() => handleSelect(result)}
                   data-testid={`search-result-${result.id}`}
                 >
-                  <BookmarkIcon className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                  <BookmarkIcon className="text-muted-foreground h-4 w-4 flex-shrink-0" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{result.title}</p>
                     {result.url && (
-                      <p className="truncate text-xs text-muted-foreground">{result.url}</p>
+                      <p className="text-muted-foreground truncate text-xs">{result.url}</p>
                     )}
                   </div>
                 </button>
@@ -131,26 +139,26 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
 
           {collectionResults.length > 0 && (
             <div>
-              <p className="mb-1 px-2 text-xs font-medium text-muted-foreground">{t('collections')}</p>
+              <p className="text-muted-foreground mb-1 px-2 text-xs font-medium">
+                {t('collections')}
+              </p>
               {collectionResults.map((result) => (
                 <button
                   key={result.id}
-                  className={`flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-accent ${
+                  className={`hover:bg-accent flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm ${
                     results.indexOf(result) === selectedIndex ? 'bg-accent' : ''
                   }`}
                   onClick={() => handleSelect(result)}
                   data-testid={`search-result-${result.id}`}
                 >
-                  <FolderOpen className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                  <FolderOpen className="text-muted-foreground h-4 w-4 flex-shrink-0" />
                   <p className="truncate font-medium">{result.title}</p>
                 </button>
               ))}
             </div>
           )}
 
-          {!query && (
-            <p className="py-4 text-center text-xs text-muted-foreground">{t('hint')}</p>
-          )}
+          {!query && <p className="text-muted-foreground py-4 text-center text-xs">{t('hint')}</p>}
         </div>
       </DialogContent>
     </Dialog>

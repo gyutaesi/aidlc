@@ -38,18 +38,15 @@ export function GroupDashboardClient({ initialGroups }: GroupDashboardClientProp
   return (
     <>
       {/* 데스크탑: 가로 스크롤 컬럼 */}
-      <div
-        className="hidden flex-1 gap-4 overflow-x-auto p-6 md:flex"
-        data-testid="groups-desktop"
-      >
+      <div className="hidden flex-1 gap-4 overflow-x-auto p-6 md:flex" data-testid="groups-desktop">
         {groups.map((group) => (
           <GroupColumn
             key={group.id}
             group={group}
             onAddBookmark={handleAddBookmark}
-            onEdit={(g) => toast.info('그룹 편집')}
+            onEdit={(_g) => toast.info('그룹 편집')}
             onDelete={handleDeleteGroup}
-            onConvertToCollection={(id) => toast.info('컬렉션 변환')}
+            onConvertToCollection={(_id) => toast.info('컬렉션 변환')}
           />
         ))}
 
@@ -67,15 +64,23 @@ export function GroupDashboardClient({ initialGroups }: GroupDashboardClientProp
       {/* 모바일: 세로 스택 (accordion) */}
       <div className="flex-1 space-y-2 overflow-y-auto p-4 md:hidden" data-testid="groups-mobile">
         {groups.map((group) => (
-          <details key={group.id} className="rounded-lg border" data-testid={`group-accordion-${group.id}`}>
+          <details
+            key={group.id}
+            className="rounded-lg border"
+            data-testid={`group-accordion-${group.id}`}
+          >
             <summary className="flex cursor-pointer items-center gap-2 px-4 py-3 font-medium">
               {group.emoji && <span>{group.emoji}</span>}
               {group.name}
-              <span className="ml-auto text-sm text-muted-foreground">({group.bookmarks.length})</span>
+              <span className="text-muted-foreground ml-auto text-sm">
+                ({group.bookmarks.length})
+              </span>
             </summary>
             <div className="border-t p-2">
               {group.bookmarks.map((b) => (
-                <div key={b.id} className="px-2 py-1 text-sm">{b.title}</div>
+                <div key={b.id} className="px-2 py-1 text-sm">
+                  {b.title}
+                </div>
               ))}
             </div>
           </details>

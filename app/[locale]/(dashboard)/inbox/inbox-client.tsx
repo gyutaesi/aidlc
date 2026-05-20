@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { BookmarkCard } from '@/components/features/bookmark/bookmark-card'
-import { Button } from '@/components/ui/button'
 import {
   deleteBookmarkAction,
   markAsReadAction,
@@ -42,7 +41,7 @@ export function InboxClient({ initialData }: InboxClientProps) {
     const result = await deleteBookmarkAction(id)
     if (result.success) {
       setBookmarks((prev) => prev.filter((b) => b.id !== id))
-      toast.success(useTranslations('bookmark')('deleteSuccess'))
+      toast.success(t('deleteBookmark'))
     } else {
       toast.error(result.error)
     }
@@ -52,24 +51,20 @@ export function InboxClient({ initialData }: InboxClientProps) {
     return (
       <div className="py-16 text-center" data-testid="inbox-empty">
         <p className="text-muted-foreground">{t('empty')}</p>
-        <p className="mt-1 text-sm text-muted-foreground">{t('emptyDescription')}</p>
+        <p className="text-muted-foreground mt-1 text-sm">{t('emptyDescription')}</p>
       </div>
     )
   }
 
   return (
-    <div
-      className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
-      data-testid="inbox-grid"
-    >
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" data-testid="inbox-grid">
       {bookmarks.map((bookmark) => (
         <BookmarkCard
           key={bookmark.id}
           bookmark={bookmark}
           onMarkAsRead={handleMarkAsRead}
           onMarkAsUnread={handleMarkAsUnread}
-          onMoveToGroup={(id) => toast.info('그룹 이동 기능')}
-          onMoveToCollection={(id) => toast.info('컬렉션 이동 기능')}
+          onMoveToGroup={(_id) => toast.info('그룹 이동 기능')}
           onDelete={handleDelete}
         />
       ))}

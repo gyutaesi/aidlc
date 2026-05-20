@@ -11,7 +11,7 @@ export const POST = withErrorHandler(async (req: NextRequest, ctx) => {
   if (!token) throw new UnauthorizedError('로그인이 필요합니다')
   const user = await authService.getUserFromToken(token)
 
-  const collectionId = ctx.params.id
+  const { id: collectionId } = await ctx.params
   const result = await collectionStatsService.toggleLike(collectionId, user.id)
 
   return NextResponse.json(result)
