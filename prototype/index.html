@@ -1,0 +1,1503 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>moaring - 북마크 매니저</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: { 50:'#f0f9ff',100:'#e0f2fe',200:'#bae6fd',300:'#7dd3fc',400:'#38bdf8',500:'#0ea5e9',600:'#0284c7',700:'#0369a1',800:'#075985',900:'#0c4a6e' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .drag-over { border: 2px dashed #0ea5e9 !important; background: #f0f9ff !important; }
+    .dragging { opacity: 0.4; }
+    .toast { animation: slideIn 0.3s ease; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity:0; } to { transform: translateX(0); opacity:1; } }
+    .modal-backdrop { backdrop-filter: blur(4px); }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    .sidebar-item:hover { background: #f1f5f9; }
+    .sidebar-item.active { background: #e0f2fe; color: #0284c7; }
+    .card-hover:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translateY(-1px); transition: all 0.2s; }
+    .group-col { min-width: 280px; max-width: 320px; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+<!-- ===== MOCK API (fetch intercept) ===== -->
+<script>
+// ============================================================
+// MOCK DATA STORE
+// ============================================================
+const DB = {
+  user: { id:'u1', email:'demo@moaring.io', name:'데모 유저' },
+  token: null,
+  bookmarks: [
+    { id:'b1', url:'https://github.com', title:'GitHub', description:'세계 최대 코드 호스팅 플랫폼', thumbnailUrl:'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png', tags:['개발','git'], isRead:false, groupId:null, createdAt:'2024-01-15T09:00:00Z' },
+    { id:'b2', url:'https://youtube.com', title:'YouTube', description:'동영상 스트리밍 플랫폼', thumbnailUrl:'https://www.youtube.com/img/desktop/yt_1200.png', tags:['미디어','영상'], isRead:true, groupId:'g1', createdAt:'2024-01-14T10:00:00Z' },
+    { id:'b3', url:'https://medium.com/@dev/react-hooks', title:'React Hooks 완벽 가이드', description:'useState, useEffect, useContext 등 모든 훅 설명', thumbnailUrl:'', tags:['React','개발','프론트엔드'], isRead:false, groupId:'g1', createdAt:'2024-01-13T11:00:00Z' },
+    { id:'b4', url:'https://stackoverflow.com', title:'Stack Overflow', description:'개발자 Q&A 커뮤니티', thumbnailUrl:'', tags:['개발','Q&A'], isRead:true, groupId:'g1', createdAt:'2024-01-12T12:00:00Z' },
+    { id:'b5', url:'https://developer.mozilla.org', title:'MDN Web Docs', description:'웹 기술 공식 문서', thumbnailUrl:'', tags:['개발','문서','웹'], isRead:false, groupId:null, createdAt:'2024-01-11T13:00:00Z' },
+    { id:'b6', url:'https://dribbble.com', title:'Dribbble', description:'디자이너들의 포트폴리오 플랫폼', thumbnailUrl:'', tags:['디자인','UI'], isRead:false, groupId:'g2', createdAt:'2024-01-10T14:00:00Z' },
+    { id:'b7', url:'https://figma.com', title:'Figma', description:'협업 UI 디자인 툴', thumbnailUrl:'', tags:['디자인','툴'], isRead:true, groupId:'g2', createdAt:'2024-01-09T15:00:00Z' },
+    { id:'b8', url:'https://notion.so', title:'Notion', description:'올인원 워크스페이스', thumbnailUrl:'', tags:['생산성','노트'], isRead:false, groupId:'g3', createdAt:'2024-01-08T16:00:00Z' },
+    { id:'b9', url:'https://vercel.com', title:'Vercel', description:'프론트엔드 배포 플랫폼', thumbnailUrl:'', tags:['개발','배포','클라우드'], isRead:false, groupId:null, createdAt:'2024-01-07T17:00:00Z' },
+    { id:'b10', url:'https://tailwindcss.com', title:'Tailwind CSS', description:'유틸리티 퍼스트 CSS 프레임워크', thumbnailUrl:'', tags:['CSS','개발','프론트엔드'], isRead:true, groupId:'g1', createdAt:'2024-01-06T18:00:00Z' }
+  ],
+  groups: [
+    { id:'g1', name:'개발 리소스', emoji:'📚', bookmarkIds:['b2','b3','b4','b10'], createdAt:'2024-01-01T00:00:00Z' },
+    { id:'g2', name:'디자인 참고', emoji:'🎨', bookmarkIds:['b6','b7'], createdAt:'2024-01-02T00:00:00Z' },
+    { id:'g3', name:'아이디어', emoji:'💡', bookmarkIds:['b8'], createdAt:'2024-01-03T00:00:00Z' }
+  ],
+  collections: [
+    {
+      id:'c1', name:'Next.js 시작 가이드', emoji:'🚀', description:'Next.js를 처음 시작하는 분들을 위한 단계별 가이드', template:'guide', isPublic:true, slug:'nextjs-guide',
+      viewCount:142, likeCount:23, likedByMe:false,
+      blocks:[
+        { id:'bl1', type:'text', content:'Next.js는 React 기반의 풀스택 프레임워크입니다. 이 가이드를 따라 처음부터 배워보세요.', order:0 },
+        { id:'bl2', type:'link', url:'https://nextjs.org/docs', title:'Next.js 공식 문서', description:'공식 문서로 시작하세요', thumbnailUrl:'', order:1 },
+        { id:'bl3', type:'link', url:'https://github.com/vercel/next.js', title:'Next.js GitHub', description:'소스코드와 예제 확인', thumbnailUrl:'', order:2 },
+        { id:'bl4', type:'link', url:'https://vercel.com', title:'Vercel 배포', description:'Next.js 앱을 쉽게 배포', thumbnailUrl:'', order:3 }
+      ],
+      createdAt:'2024-01-05T00:00:00Z'
+    },
+    {
+      id:'c2', name:'내 개발 프로필', emoji:'👨‍💻', description:'개발자 소개 및 주요 링크 모음', template:'profile', isPublic:true, slug:'my-dev-profile',
+      viewCount:89, likeCount:11, likedByMe:false,
+      blocks:[
+        { id:'bl5', type:'image', url:'https://avatars.githubusercontent.com/u/1?v=4', alt:'프로필 이미지', order:0 },
+        { id:'bl6', type:'link', url:'https://github.com', title:'GitHub', description:'코드 저장소', thumbnailUrl:'', order:1 },
+        { id:'bl7', type:'link', url:'https://linkedin.com', title:'LinkedIn', description:'커리어 프로필', thumbnailUrl:'', order:2 },
+        { id:'bl8', type:'link', url:'https://twitter.com', title:'Twitter', description:'개발 트윗', thumbnailUrl:'', order:3 },
+        { id:'bl9', type:'link', url:'https://medium.com', title:'Medium 블로그', description:'기술 아티클', thumbnailUrl:'', order:4 },
+        { id:'bl10', type:'link', url:'https://portfolio.dev', title:'포트폴리오', description:'프로젝트 모음', thumbnailUrl:'', order:5 }
+      ],
+      createdAt:'2024-01-04T00:00:00Z'
+    }
+  ],
+  nextId: 100
+};
+
+function genId(prefix) { return prefix + (++DB.nextId); }
+function delay(ms=120) { return new Promise(r=>setTimeout(r,ms)); }
+function json(data, status=200) {
+  return new Response(JSON.stringify(data), { status, headers:{'Content-Type':'application/json'} });
+}
+
+// ============================================================
+// FETCH INTERCEPTOR
+// ============================================================
+const _origFetch = window.fetch.bind(window);
+window.fetch = async function(input, init={}) {
+  const url = typeof input === 'string' ? input : input.url;
+  const method = (init.method || 'GET').toUpperCase();
+  const body = init.body ? JSON.parse(init.body) : null;
+
+  // Only intercept /api/ routes
+  if (!url.startsWith('/api/')) return _origFetch(input, init);
+
+  await delay();
+  const path = url.split('?')[0];
+  const qs = url.includes('?') ? Object.fromEntries(new URLSearchParams(url.split('?')[1])) : {};
+  const seg = path.replace('/api/','').split('/');
+
+  // AUTH
+  if (seg[0]==='auth') {
+    if (seg[1]==='login' && method==='POST') {
+      DB.token = 'mock-token-123';
+      return json({ token: DB.token, user: DB.user });
+    }
+    if (seg[1]==='signup' && method==='POST') {
+      DB.token = 'mock-token-123';
+      DB.user = { id:'u1', email: body.email, name: body.name||body.email.split('@')[0] };
+      return json({ token: DB.token, user: DB.user });
+    }
+    if (seg[1]==='logout') { DB.token=null; return json({ok:true}); }
+  }
+
+  // BOOKMARKS
+  if (seg[0]==='bookmarks') {
+    if (seg[1]==='metadata' && method==='POST') {
+      const ogMock = {
+        'github.com':{ title:'GitHub', description:'세계 최대 코드 호스팅 플랫폼', thumbnailUrl:'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png' },
+        'youtube.com':{ title:'YouTube', description:'동영상 스트리밍 플랫폼', thumbnailUrl:'' },
+        'medium.com':{ title:'Medium 아티클', description:'흥미로운 기술 아티클', thumbnailUrl:'' },
+        'vercel.com':{ title:'Vercel', description:'프론트엔드 배포 플랫폼', thumbnailUrl:'' },
+      };
+      const domain = (body.url||'').replace(/https?:\/\//,'').split('/')[0].replace('www.','');
+      const meta = ogMock[domain] || { title: domain || '새 북마크', description:'', thumbnailUrl:'' };
+      return json(meta);
+    }
+    if (seg[1]==='import' && method==='POST') {
+      return json({ imported: 5, failed: 0 });
+    }
+    if (seg[1]==='recent') {
+      return json([...DB.bookmarks].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).slice(0,5));
+    }
+    if (seg[1]==='urls') {
+      return json(DB.bookmarks.map(b=>b.url));
+    }
+    if (seg[2]==='read' && method==='POST') {
+      const bm = DB.bookmarks.find(b=>b.id===seg[1]);
+      if (bm) bm.isRead = true;
+      return json(bm);
+    }
+    if (!seg[1] && method==='GET') {
+      let bms = [...DB.bookmarks];
+      if (qs.groupId) bms = bms.filter(b=>b.groupId===qs.groupId);
+      if (qs.isRead==='true') bms = bms.filter(b=>b.isRead);
+      if (qs.isRead==='false') bms = bms.filter(b=>!b.isRead);
+      if (qs.sort==='oldest') bms.sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt));
+      else bms.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+      return json(bms);
+    }
+    if (!seg[1] && method==='POST') {
+      const bm = { id:genId('b'), ...body, isRead:false, createdAt:new Date().toISOString() };
+      DB.bookmarks.unshift(bm);
+      if (bm.groupId) { const g=DB.groups.find(g=>g.id===bm.groupId); if(g) g.bookmarkIds.push(bm.id); }
+      return json(bm, 201);
+    }
+    if (seg[1] && method==='PUT') {
+      const idx = DB.bookmarks.findIndex(b=>b.id===seg[1]);
+      if (idx>=0) { DB.bookmarks[idx]={...DB.bookmarks[idx],...body}; return json(DB.bookmarks[idx]); }
+    }
+    if (seg[1] && method==='DELETE') {
+      DB.bookmarks = DB.bookmarks.filter(b=>b.id!==seg[1]);
+      DB.groups.forEach(g=>{ g.bookmarkIds=g.bookmarkIds.filter(id=>id!==seg[1]); });
+      return json({}, 204);
+    }
+  }
+
+  // GROUPS
+  if (seg[0]==='groups') {
+    if (!seg[1] && method==='GET') return json(DB.groups);
+    if (!seg[1] && method==='POST') {
+      const g = { id:genId('g'), ...body, bookmarkIds:[], createdAt:new Date().toISOString() };
+      DB.groups.push(g); return json(g, 201);
+    }
+    if (seg[1] && seg[2]==='bookmarks' && seg[3]==='reorder' && method==='PUT') {
+      const g=DB.groups.find(g=>g.id===seg[1]); if(g) g.bookmarkIds=body.bookmarkIds; return json({ok:true});
+    }
+    if (seg[1] && seg[2]==='convert' && method==='POST') {
+      const g=DB.groups.find(g=>g.id===seg[1]);
+      const col={ id:genId('c'), name:g.name, emoji:g.emoji, description:'', template:'guide', isPublic:false, slug:g.name.toLowerCase().replace(/\s+/g,'-')+'-'+genId(''), viewCount:0, likeCount:0, likedByMe:false, blocks:[], createdAt:new Date().toISOString() };
+      DB.collections.push(col); return json(col);
+    }
+    if (seg[1] && method==='PUT') {
+      const idx=DB.groups.findIndex(g=>g.id===seg[1]); if(idx>=0){ DB.groups[idx]={...DB.groups[idx],...body}; return json(DB.groups[idx]); }
+    }
+    if (seg[1] && method==='DELETE') {
+      DB.groups=DB.groups.filter(g=>g.id!==seg[1]); return json({},204);
+    }
+  }
+
+  // COLLECTIONS
+  if (seg[0]==='collections') {
+    if (seg[1]==='public') {
+      const col=DB.collections.find(c=>c.slug===seg[2]); if(!col) return json({error:'Not found'},404); return json(col);
+    }
+    if (!seg[1] && method==='GET') return json(DB.collections);
+    if (!seg[1] && method==='POST') {
+      const col={ id:genId('c'), ...body, viewCount:0, likeCount:0, likedByMe:false, blocks:[], createdAt:new Date().toISOString() };
+      DB.collections.push(col); return json(col,201);
+    }
+    if (seg[1] && !seg[2] && method==='GET') {
+      const col=DB.collections.find(c=>c.id===seg[1]); return col?json(col):json({error:'Not found'},404);
+    }
+    if (seg[1] && !seg[2] && method==='PUT') {
+      const idx=DB.collections.findIndex(c=>c.id===seg[1]); if(idx>=0){ DB.collections[idx]={...DB.collections[idx],...body}; return json(DB.collections[idx]); }
+    }
+    if (seg[1] && !seg[2] && method==='DELETE') {
+      DB.collections=DB.collections.filter(c=>c.id!==seg[1]); return json({},204);
+    }
+    if (seg[2]==='blocks' && !seg[3] && method==='POST') {
+      const col=DB.collections.find(c=>c.id===seg[1]);
+      if(col){ const bl={id:genId('bl'),...body,order:col.blocks.length}; col.blocks.push(bl); return json(col); }
+    }
+    if (seg[2]==='blocks' && seg[3] && seg[3]!=='reorder' && method==='PUT') {
+      const col=DB.collections.find(c=>c.id===seg[1]);
+      if(col){ const idx=col.blocks.findIndex(b=>b.id===seg[3]); if(idx>=0) col.blocks[idx]={...col.blocks[idx],...body}; return json(col); }
+    }
+    if (seg[2]==='blocks' && seg[3] && method==='DELETE') {
+      const col=DB.collections.find(c=>c.id===seg[1]);
+      if(col){ col.blocks=col.blocks.filter(b=>b.id!==seg[3]); return json(col); }
+    }
+    if (seg[2]==='blocks' && seg[3]==='reorder' && method==='PUT') {
+      const col=DB.collections.find(c=>c.id===seg[1]);
+      if(col){ body.blockIds.forEach((id,i)=>{ const b=col.blocks.find(b=>b.id===id); if(b) b.order=i; }); col.blocks.sort((a,b)=>a.order-b.order); return json(col); }
+    }
+    if (seg[2]==='toggle-public' && method==='POST') {
+      const col=DB.collections.find(c=>c.id===seg[1]); if(col){ col.isPublic=!col.isPublic; return json(col); }
+    }
+    if (seg[2]==='slug' && method==='PUT') {
+      const col=DB.collections.find(c=>c.id===seg[1]); if(col){ col.slug=body.slug; return json(col); }
+    }
+    if (seg[2]==='slug' && seg[3]==='check' && method==='GET') {
+      const taken=DB.collections.some(c=>c.slug===qs.slug && c.id!==seg[1]);
+      return json({ available:!taken });
+    }
+    if (seg[2]==='view' && method==='POST') {
+      const col=DB.collections.find(c=>c.id===seg[1]); if(col) col.viewCount++; return json({ok:true});
+    }
+    if (seg[2]==='like' && method==='POST') {
+      const col=DB.collections.find(c=>c.id===seg[1]);
+      if(col){ col.likedByMe=!col.likedByMe; col.likeCount+=col.likedByMe?1:-1; return json({liked:col.likedByMe,likeCount:col.likeCount}); }
+    }
+    if (seg[2]==='stats' && method==='GET') {
+      const col=DB.collections.find(c=>c.id===seg[1]); return json({ viewCount:col?.viewCount||0, likeCount:col?.likeCount||0, linkClicks:42 });
+    }
+  }
+
+  // SEARCH
+  if (seg[0]==='search') {
+    const q=(qs.q||'').toLowerCase();
+    const bms=DB.bookmarks.filter(b=>b.title.toLowerCase().includes(q)||b.url.toLowerCase().includes(q)||(b.description||'').toLowerCase().includes(q)).map(b=>({...b,type:'bookmark'}));
+    const cols=DB.collections.filter(c=>c.name.toLowerCase().includes(q)||(c.description||'').toLowerCase().includes(q)).map(c=>({...c,type:'collection'}));
+    return json([...bms,...cols]);
+  }
+
+  // TAGS
+  if (seg[0]==='tags') {
+    const prefix=(qs.prefix||'').toLowerCase();
+    const all=[...new Set(DB.bookmarks.flatMap(b=>b.tags))];
+    return json(all.filter(t=>t.toLowerCase().startsWith(prefix)).map(t=>({name:t})));
+  }
+
+  // EXPORT
+  if (seg[0]==='export') {
+    if (seg[1]==='json') {
+      const data=JSON.stringify({bookmarks:DB.bookmarks,groups:DB.groups,collections:DB.collections},null,2);
+      return new Response(data,{headers:{'Content-Type':'application/json','Content-Disposition':'attachment; filename="moaring-export.json"'}});
+    }
+    if (seg[1]==='html') {
+      const html=`<!DOCTYPE NETSCAPE-Bookmark-file-1>\n<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">\n<TITLE>Bookmarks</TITLE>\n<H1>Bookmarks</H1>\n<DL><p>\n${DB.bookmarks.map(b=>`  <DT><A HREF="${b.url}">${b.title}</A>`).join('\n')}\n</DL><p>`;
+      return new Response(html,{headers:{'Content-Type':'text/html','Content-Disposition':'attachment; filename="moaring-bookmarks.html"'}});
+    }
+  }
+
+  return json({error:'Not found'},404);
+};
+</script>
+
+<!-- React + Babel CDN -->
+<script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback, createContext, useContext } = React;
+
+// ============================================================
+// CONTEXT
+// ============================================================
+const AppCtx = createContext(null);
+
+function useApp() { return useContext(AppCtx); }
+
+// ============================================================
+// TOAST
+// ============================================================
+function ToastContainer({ toasts }) {
+  return (
+    <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
+      {toasts.map(t => (
+        <div key={t.id} className={`toast flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg text-white text-sm font-medium ${t.type==='error'?'bg-red-500':t.type==='warning'?'bg-yellow-500':'bg-green-500'}`}>
+          <span>{t.type==='error'?'✕':t.type==='warning'?'⚠':'✓'}</span>
+          <span>{t.msg}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ============================================================
+// MODAL
+// ============================================================
+function Modal({ title, onClose, children, size='md' }) {
+  const sizes = { sm:'max-w-sm', md:'max-w-md', lg:'max-w-2xl', xl:'max-w-4xl' };
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center modal-backdrop bg-black/40" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className={`bg-white rounded-2xl shadow-2xl w-full mx-4 ${sizes[size]} max-h-[90vh] flex flex-col`}>
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <h2 className="text-lg font-semibold">{title}</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
+        </div>
+        <div className="overflow-y-auto flex-1 p-6">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// SIDEBAR
+// ============================================================
+function Sidebar({ route, setRoute }) {
+  const { user, logout } = useApp();
+  const navItems = [
+    { id:'inbox', icon:'📥', label:'인박스' },
+    { id:'groups', icon:'📁', label:'그룹' },
+    { id:'collections', icon:'✨', label:'컬렉션' },
+    { id:'settings', icon:'⚙️', label:'설정' },
+  ];
+  return (
+    <aside className="w-56 bg-white border-r flex flex-col h-screen sticky top-0">
+      <div className="px-4 py-5 border-b">
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">🔖</span>
+          <span className="font-bold text-lg text-primary-600">moaring</span>
+        </div>
+      </div>
+      <nav className="flex-1 p-3 space-y-1">
+        {navItems.map(item => (
+          <button key={item.id} onClick={()=>setRoute(item.id)}
+            className={`sidebar-item w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${route===item.id?'active':''}`}>
+            <span>{item.icon}</span><span>{item.label}</span>
+          </button>
+        ))}
+      </nav>
+      <div className="p-3 border-t">
+        <div className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600">
+          <div className="w-7 h-7 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold text-xs">
+            {user?.name?.[0]?.toUpperCase()||'U'}
+          </div>
+          <span className="flex-1 truncate">{user?.name}</span>
+          <button onClick={logout} className="text-gray-400 hover:text-red-500 text-xs">로그아웃</button>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+// ============================================================
+// BOOKMARK CARD
+// ============================================================
+function BookmarkCard({ bm, onRead, onDelete, onMove, groups, collections, draggable, onDragStart, onDragOver, onDrop }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    function handler(e) { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const domain = (() => { try { return new URL(bm.url).hostname.replace('www.',''); } catch { return bm.url; } })();
+  const favicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+
+  return (
+    <div
+      draggable={draggable}
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      className={`card-hover bg-white rounded-xl border p-4 flex gap-3 cursor-pointer ${bm.isRead?'opacity-70':''}`}
+    >
+      <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+        <img src={favicon} alt="" className="w-6 h-6" onError={e=>e.target.style.display='none'} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <a href={bm.url} target="_blank" rel="noopener noreferrer" className="font-medium text-sm text-gray-900 hover:text-primary-600 truncate block" onClick={e=>e.stopPropagation()}>
+            {bm.title}
+          </a>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {!bm.isRead && <span className="w-2 h-2 rounded-full bg-primary-500 flex-shrink-0"></span>}
+            <div className="relative" ref={menuRef}>
+              <button onClick={e=>{e.stopPropagation();setMenuOpen(!menuOpen);}} className="text-gray-400 hover:text-gray-600 p-1 rounded">⋯</button>
+              {menuOpen && (
+                <div className="absolute right-0 top-6 bg-white border rounded-xl shadow-lg z-20 py-1 w-44">
+                  {!bm.isRead && <button onClick={()=>{onRead(bm.id);setMenuOpen(false);}} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">✓ 읽음 처리</button>}
+                  <div className="px-4 py-1 text-xs text-gray-400 font-medium">그룹으로 이동</div>
+                  {groups.map(g=>(
+                    <button key={g.id} onClick={()=>{onMove(bm.id,'group',g.id);setMenuOpen(false);}} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">{g.emoji} {g.name}</button>
+                  ))}
+                  <div className="border-t my-1"></div>
+                  <button onClick={()=>{onDelete(bm.id);setMenuOpen(false);}} className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50">🗑 삭제</button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        <p className="text-xs text-gray-400 truncate mt-0.5">{domain}</p>
+        {bm.description && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{bm.description}</p>}
+        {bm.tags?.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2">
+            {bm.tags.map(t=>(
+              <span key={t} className="px-2 py-0.5 bg-primary-50 text-primary-600 rounded-full text-xs">{t}</span>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// INBOX PAGE
+// ============================================================
+function InboxPage() {
+  const { toast, groups, collections } = useApp();
+  const [bookmarks, setBookmarks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [url, setUrl] = useState('');
+  const [adding, setAdding] = useState(false);
+  const [sort, setSort] = useState('newest');
+  const [filter, setFilter] = useState('all');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const params = new URLSearchParams({ sort });
+    if (filter==='read') params.set('isRead','true');
+    if (filter==='unread') params.set('isRead','false');
+    const res = await fetch(`/api/bookmarks?${params}`);
+    const data = await res.json();
+    setBookmarks(data.filter(b=>!b.groupId));
+    setLoading(false);
+  }, [sort, filter]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function addBookmark() {
+    if (!url.trim()) return;
+    setAdding(true);
+    try {
+      const metaRes = await fetch('/api/bookmarks/metadata', { method:'POST', body:JSON.stringify({url}), headers:{'Content-Type':'application/json'} });
+      const meta = await metaRes.json();
+      await fetch('/api/bookmarks', { method:'POST', body:JSON.stringify({url, title:meta.title||url, description:meta.description||'', thumbnailUrl:meta.thumbnailUrl||'', tags:[], groupId:null}), headers:{'Content-Type':'application/json'} });
+      setUrl('');
+      toast('북마크가 저장되었습니다 🎉');
+      load();
+    } catch { toast('저장 실패', 'error'); }
+    setAdding(false);
+  }
+
+  async function handleRead(id) {
+    await fetch(`/api/bookmarks/${id}/read`, { method:'POST' });
+    toast('읽음 처리 완료');
+    load();
+  }
+
+  async function handleDelete(id) {
+    await fetch(`/api/bookmarks/${id}`, { method:'DELETE' });
+    toast('삭제되었습니다');
+    load();
+  }
+
+  async function handleMove(id, type, targetId) {
+    await fetch(`/api/bookmarks/${id}`, { method:'PUT', body:JSON.stringify({ groupId: type==='group'?targetId:null }), headers:{'Content-Type':'application/json'} });
+    toast('이동 완료');
+    load();
+  }
+
+  async function handleImport(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const res = await fetch('/api/bookmarks/import', { method:'POST', body:JSON.stringify({filename:file.name}), headers:{'Content-Type':'application/json'} });
+    const data = await res.json();
+    toast(`${data.imported}개 가져오기 완료`);
+    load();
+  }
+
+  return (
+    <div className="flex-1 p-6 max-w-3xl mx-auto w-full">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">📥 인박스</h1>
+        <label className="cursor-pointer px-3 py-2 text-sm border rounded-lg hover:bg-gray-50 flex items-center gap-2">
+          <span>🗂</span><span>크롬 북마크 가져오기</span>
+          <input type="file" accept=".html" className="hidden" onChange={handleImport} />
+        </label>
+      </div>
+
+      {/* URL 입력 */}
+      <div className="bg-white rounded-xl border p-4 mb-6 flex gap-2">
+        <input value={url} onChange={e=>setUrl(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addBookmark()}
+          placeholder="URL을 입력하세요 (Enter 또는 저장 클릭)"
+          className="flex-1 text-sm outline-none placeholder-gray-400" />
+        <button onClick={addBookmark} disabled={adding}
+          className="px-4 py-2 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 disabled:opacity-50">
+          {adding ? '저장 중...' : '저장'}
+        </button>
+      </div>
+
+      {/* 필터/정렬 */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex gap-1">
+          {[['all','전체'],['unread','미읽음'],['read','읽음']].map(([v,l])=>(
+            <button key={v} onClick={()=>setFilter(v)} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${filter===v?'bg-primary-500 text-white':'bg-white border hover:bg-gray-50'}`}>{l}</button>
+          ))}
+        </div>
+        <select value={sort} onChange={e=>setSort(e.target.value)} className="text-sm border rounded-lg px-3 py-1.5 bg-white">
+          <option value="newest">최신순</option>
+          <option value="oldest">오래된순</option>
+        </select>
+      </div>
+
+      {/* 북마크 목록 */}
+      {loading ? (
+        <div className="text-center py-12 text-gray-400">불러오는 중...</div>
+      ) : bookmarks.length === 0 ? (
+        <div className="text-center py-12 text-gray-400">
+          <div className="text-4xl mb-3">📭</div>
+          <p>북마크가 없습니다. URL을 입력해 저장해보세요!</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {bookmarks.map(bm => (
+            <BookmarkCard key={bm.id} bm={bm} onRead={handleRead} onDelete={handleDelete} onMove={handleMove} groups={groups} collections={collections} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// GROUPS PAGE
+// ============================================================
+function GroupsPage() {
+  const { toast, groups, setGroups } = useApp();
+  const [bookmarks, setBookmarks] = useState([]);
+  const [showCreate, setShowCreate] = useState(false);
+  const [editGroup, setEditGroup] = useState(null);
+  const [form, setForm] = useState({ name:'', emoji:'📁' });
+  const [dragBm, setDragBm] = useState(null);
+  const [dragFrom, setDragFrom] = useState(null);
+
+  useEffect(() => {
+    fetch('/api/bookmarks').then(r=>r.json()).then(setBookmarks);
+  }, [groups]);
+
+  async function createGroup() {
+    if (!form.name.trim()) return;
+    const res = await fetch('/api/groups', { method:'POST', body:JSON.stringify(form), headers:{'Content-Type':'application/json'} });
+    const g = await res.json();
+    setGroups(prev=>[...prev,g]);
+    setShowCreate(false); setForm({name:'',emoji:'📁'});
+    toast('그룹이 생성되었습니다');
+  }
+
+  async function updateGroup() {
+    const res = await fetch(`/api/groups/${editGroup.id}`, { method:'PUT', body:JSON.stringify(form), headers:{'Content-Type':'application/json'} });
+    const g = await res.json();
+    setGroups(prev=>prev.map(x=>x.id===g.id?g:x));
+    setEditGroup(null); setForm({name:'',emoji:'📁'});
+    toast('그룹이 수정되었습니다');
+  }
+
+  async function deleteGroup(id) {
+    await fetch(`/api/groups/${id}`, { method:'DELETE' });
+    setGroups(prev=>prev.filter(g=>g.id!==id));
+    toast('그룹이 삭제되었습니다');
+  }
+
+  async function convertToCollection(id) {
+    const res = await fetch(`/api/groups/${id}/convert`, { method:'POST' });
+    const col = await res.json();
+    toast(`컬렉션 "${col.name}"으로 변환되었습니다`);
+  }
+
+  function getGroupBookmarks(g) {
+    return g.bookmarkIds.map(id=>bookmarks.find(b=>b.id===id)).filter(Boolean);
+  }
+
+  function handleDragStart(bm, groupId) {
+    setDragBm(bm); setDragFrom(groupId);
+  }
+
+  async function handleDrop(targetGroupId) {
+    if (!dragBm || dragFrom===targetGroupId) return;
+    await fetch(`/api/bookmarks/${dragBm.id}`, { method:'PUT', body:JSON.stringify({groupId:targetGroupId}), headers:{'Content-Type':'application/json'} });
+    const res = await fetch('/api/bookmarks').then(r=>r.json());
+    setBookmarks(res);
+    const gRes = await fetch('/api/groups').then(r=>r.json());
+    setGroups(gRes);
+    toast('북마크가 이동되었습니다');
+    setDragBm(null); setDragFrom(null);
+  }
+
+  const emojis = ['📁','📚','🎨','💡','🔧','🌟','🎯','🚀','💼','🎵','🎮','🏠'];
+
+  return (
+    <div className="flex-1 p-6 overflow-x-auto">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">📁 그룹</h1>
+        <button onClick={()=>{setShowCreate(true);setForm({name:'',emoji:'📁'});}}
+          className="px-4 py-2 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600">
+          + 그룹 만들기
+        </button>
+      </div>
+
+      <div className="flex gap-4 pb-4" style={{minHeight:'60vh'}}>
+        {groups.map(g => (
+          <div key={g.id}
+            className="group-col bg-white rounded-xl border flex flex-col"
+            onDragOver={e=>{e.preventDefault();e.currentTarget.classList.add('drag-over');}}
+            onDragLeave={e=>e.currentTarget.classList.remove('drag-over')}
+            onDrop={e=>{e.currentTarget.classList.remove('drag-over');handleDrop(g.id);}}>
+            <div className="flex items-center justify-between px-4 py-3 border-b">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">{g.emoji}</span>
+                <span className="font-semibold text-sm">{g.name}</span>
+                <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{g.bookmarkIds.length}</span>
+              </div>
+              <div className="flex gap-1">
+                <button onClick={()=>{setEditGroup(g);setForm({name:g.name,emoji:g.emoji});}} className="text-gray-400 hover:text-gray-600 p-1 text-sm">✏️</button>
+                <button onClick={()=>convertToCollection(g.id)} className="text-gray-400 hover:text-primary-500 p-1 text-sm" title="컬렉션으로 변환">✨</button>
+                <button onClick={()=>deleteGroup(g.id)} className="text-gray-400 hover:text-red-500 p-1 text-sm">🗑</button>
+              </div>
+            </div>
+            <div className="flex-1 p-3 space-y-2 overflow-y-auto">
+              {getGroupBookmarks(g).map(bm => (
+                <div key={bm.id}
+                  draggable
+                  onDragStart={()=>handleDragStart(bm,g.id)}
+                  className="bg-gray-50 rounded-lg p-3 cursor-grab active:cursor-grabbing hover:bg-gray-100 transition-colors">
+                  <div className="flex items-center gap-2">
+                    <img src={`https://www.google.com/s2/favicons?domain=${new URL(bm.url).hostname}&sz=16`} alt="" className="w-4 h-4" onError={e=>e.target.style.display='none'} />
+                    <span className="text-sm font-medium truncate">{bm.title}</span>
+                    {!bm.isRead && <span className="w-1.5 h-1.5 rounded-full bg-primary-500 flex-shrink-0"></span>}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1 truncate">{new URL(bm.url).hostname.replace('www.','')}</p>
+                </div>
+              ))}
+              {getGroupBookmarks(g).length===0 && (
+                <div className="text-center py-8 text-gray-300 text-sm">북마크를 드래그해서 추가하세요</div>
+              )}
+            </div>
+          </div>
+        ))}
+
+        {/* 빈 드롭존 (인박스로 이동) */}
+        <div className="group-col bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-300 text-sm"
+          onDragOver={e=>{e.preventDefault();e.currentTarget.classList.add('drag-over');}}
+          onDragLeave={e=>e.currentTarget.classList.remove('drag-over')}
+          onDrop={e=>{e.currentTarget.classList.remove('drag-over');handleDrop(null);}}>
+          <div className="text-center">
+            <div className="text-3xl mb-2">📥</div>
+            <p>인박스로 이동</p>
+          </div>
+        </div>
+      </div>
+
+      {/* 그룹 생성/수정 모달 */}
+      {(showCreate || editGroup) && (
+        <Modal title={editGroup?'그룹 수정':'그룹 만들기'} onClose={()=>{setShowCreate(false);setEditGroup(null);}}>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">이모지</label>
+              <div className="flex flex-wrap gap-2">
+                {emojis.map(e=>(
+                  <button key={e} onClick={()=>setForm(f=>({...f,emoji:e}))}
+                    className={`w-10 h-10 rounded-lg text-xl flex items-center justify-center transition-colors ${form.emoji===e?'bg-primary-100 ring-2 ring-primary-400':'hover:bg-gray-100'}`}>{e}</button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">그룹 이름</label>
+              <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&(editGroup?updateGroup():createGroup())}
+                placeholder="그룹 이름 입력" className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-300" />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button onClick={()=>{setShowCreate(false);setEditGroup(null);}} className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50">취소</button>
+              <button onClick={editGroup?updateGroup:createGroup} className="px-4 py-2 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600">
+                {editGroup?'수정':'만들기'}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// COLLECTIONS PAGE
+// ============================================================
+function CollectionsPage({ setRoute }) {
+  const { toast, collections, setCollections } = useApp();
+  const [showCreate, setShowCreate] = useState(false);
+  const [form, setForm] = useState({ name:'', emoji:'✨', description:'', template:'guide', isPublic:false, slug:'' });
+
+  async function createCollection() {
+    if (!form.name.trim()) return;
+    const slug = form.slug || form.name.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+    const res = await fetch('/api/collections', { method:'POST', body:JSON.stringify({...form,slug}), headers:{'Content-Type':'application/json'} });
+    const col = await res.json();
+    setCollections(prev=>[...prev,col]);
+    setShowCreate(false);
+    setForm({ name:'', emoji:'✨', description:'', template:'guide', isPublic:false, slug:'' });
+    toast('컬렉션이 생성되었습니다');
+  }
+
+  async function deleteCollection(id) {
+    await fetch(`/api/collections/${id}`, { method:'DELETE' });
+    setCollections(prev=>prev.filter(c=>c.id!==id));
+    toast('컬렉션이 삭제되었습니다');
+  }
+
+  const emojis = ['✨','🚀','📚','🎨','💡','🔧','🌟','🎯','💼','🎵','🎮','🏠','👨‍💻','🌈','🔥'];
+
+  return (
+    <div className="flex-1 p-6 max-w-4xl mx-auto w-full">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">✨ 컬렉션</h1>
+        <button onClick={()=>setShowCreate(true)} className="px-4 py-2 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600">
+          + 컬렉션 만들기
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {collections.map(col => (
+          <div key={col.id} className="card-hover bg-white rounded-xl border p-5 flex flex-col gap-3">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">{col.emoji}</span>
+                <div>
+                  <h3 className="font-semibold">{col.name}</h3>
+                  <p className="text-xs text-gray-400 mt-0.5">{col.template==='guide'?'📋 가이드':'👤 프로필'} · {col.blocks?.length||0}개 블록</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${col.isPublic?'bg-green-100 text-green-600':'bg-gray-100 text-gray-500'}`}>
+                  {col.isPublic?'🌐 공개':'🔒 비공개'}
+                </span>
+              </div>
+            </div>
+            {col.description && <p className="text-sm text-gray-500">{col.description}</p>}
+            <div className="flex items-center gap-3 text-xs text-gray-400">
+              <span>👁 {col.viewCount}</span>
+              <span>❤️ {col.likeCount}</span>
+              {col.isPublic && <span className="text-primary-500 font-medium">/c/{col.slug}</span>}
+            </div>
+            <div className="flex gap-2 pt-1 border-t">
+              <button onClick={()=>setRoute(`collection-edit:${col.id}`)} className="flex-1 px-3 py-1.5 border rounded-lg text-sm hover:bg-gray-50">✏️ 편집</button>
+              {col.isPublic && (
+                <button onClick={()=>setRoute(`public:${col.slug}`)} className="flex-1 px-3 py-1.5 border rounded-lg text-sm hover:bg-gray-50">🌐 미리보기</button>
+              )}
+              <button onClick={()=>deleteCollection(col.id)} className="px-3 py-1.5 border rounded-lg text-sm text-red-400 hover:bg-red-50">🗑</button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {collections.length===0 && (
+        <div className="text-center py-16 text-gray-400">
+          <div className="text-5xl mb-4">✨</div>
+          <p className="text-lg font-medium mb-2">아직 컬렉션이 없어요</p>
+          <p className="text-sm">북마크를 큐레이션해서 공유 가능한 컬렉션을 만들어보세요</p>
+        </div>
+      )}
+
+      {showCreate && (
+        <Modal title="컬렉션 만들기" onClose={()=>setShowCreate(false)}>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">이모지</label>
+              <div className="flex flex-wrap gap-2">
+                {emojis.map(e=>(
+                  <button key={e} onClick={()=>setForm(f=>({...f,emoji:e}))}
+                    className={`w-10 h-10 rounded-lg text-xl flex items-center justify-center ${form.emoji===e?'bg-primary-100 ring-2 ring-primary-400':'hover:bg-gray-100'}`}>{e}</button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">이름</label>
+              <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="컬렉션 이름" className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-300" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">설명</label>
+              <textarea value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} placeholder="컬렉션 설명 (선택)" rows={2} className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-300 resize-none" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">템플릿</label>
+              <div className="grid grid-cols-2 gap-2">
+                {[['guide','📋 가이드','번호 있는 순서형 레이아웃'],['profile','👤 프로필','개인 소개 + 링크 나열']].map(([v,l,d])=>(
+                  <button key={v} onClick={()=>setForm(f=>({...f,template:v}))}
+                    className={`p-3 border rounded-xl text-left transition-colors ${form.template===v?'border-primary-400 bg-primary-50':'hover:bg-gray-50'}`}>
+                    <div className="font-medium text-sm">{l}</div>
+                    <div className="text-xs text-gray-400 mt-0.5">{d}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">슬러그 (URL)</label>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-400">/c/</span>
+                <input value={form.slug} onChange={e=>setForm(f=>({...f,slug:e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,'')}))} placeholder="my-collection" className="flex-1 border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-300" />
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <div onClick={()=>setForm(f=>({...f,isPublic:!f.isPublic}))}
+                  className={`w-10 h-6 rounded-full transition-colors relative ${form.isPublic?'bg-primary-500':'bg-gray-200'}`}>
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.isPublic?'translate-x-5':'translate-x-1'}`}></div>
+                </div>
+                <span className="text-sm font-medium">공개</span>
+              </label>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button onClick={()=>setShowCreate(false)} className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50">취소</button>
+              <button onClick={createCollection} className="px-4 py-2 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600">만들기</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// COLLECTION EDITOR PAGE
+// ============================================================
+function CollectionEditorPage({ collectionId, setRoute }) {
+  const { toast, collections, setCollections } = useApp();
+  const [col, setCol] = useState(null);
+  const [slugInput, setSlugInput] = useState('');
+  const [slugAvail, setSlugAvail] = useState(null);
+  const [showAddBlock, setShowAddBlock] = useState(false);
+  const [blockForm, setBlockForm] = useState({ type:'link', url:'', title:'', description:'', content:'', imageUrl:'' });
+  const [dragIdx, setDragIdx] = useState(null);
+  const [editBlock, setEditBlock] = useState(null);
+
+  useEffect(() => {
+    fetch(`/api/collections/${collectionId}`).then(r=>r.json()).then(c=>{ setCol(c); setSlugInput(c.slug); });
+  }, [collectionId]);
+
+  async function togglePublic() {
+    const res = await fetch(`/api/collections/${collectionId}/toggle-public`, { method:'POST' });
+    const updated = await res.json();
+    setCol(updated);
+    setCollections(prev=>prev.map(c=>c.id===updated.id?updated:c));
+    toast(updated.isPublic?'공개로 전환되었습니다':'비공개로 전환되었습니다');
+  }
+
+  async function checkSlug(slug) {
+    if (!slug || slug===col.slug) { setSlugAvail(null); return; }
+    const res = await fetch(`/api/collections/${collectionId}/slug/check?slug=${slug}`);
+    const data = await res.json();
+    setSlugAvail(data.available);
+  }
+
+  async function saveSlug() {
+    if (!slugInput || slugAvail===false) return;
+    const res = await fetch(`/api/collections/${collectionId}/slug`, { method:'PUT', body:JSON.stringify({slug:slugInput}), headers:{'Content-Type':'application/json'} });
+    const updated = await res.json();
+    setCol(updated); setSlugAvail(null);
+    setCollections(prev=>prev.map(c=>c.id===updated.id?updated:c));
+    toast('슬러그가 저장되었습니다');
+  }
+
+  async function addBlock() {
+    const blockData = blockForm.type==='link'
+      ? { type:'link', url:blockForm.url, title:blockForm.title, description:blockForm.description, thumbnailUrl:'' }
+      : blockForm.type==='text'
+      ? { type:'text', content:blockForm.content }
+      : { type:'image', url:blockForm.imageUrl, alt:blockForm.title };
+    const res = await fetch(`/api/collections/${collectionId}/blocks`, { method:'POST', body:JSON.stringify(blockData), headers:{'Content-Type':'application/json'} });
+    const updated = await res.json();
+    setCol(updated);
+    setShowAddBlock(false);
+    setBlockForm({ type:'link', url:'', title:'', description:'', content:'', imageUrl:'' });
+    toast('블록이 추가되었습니다');
+  }
+
+  async function deleteBlock(blockId) {
+    const res = await fetch(`/api/collections/${collectionId}/blocks/${blockId}`, { method:'DELETE' });
+    const updated = await res.json();
+    setCol(updated);
+    toast('블록이 삭제되었습니다');
+  }
+
+  async function saveBlockEdit() {
+    const res = await fetch(`/api/collections/${collectionId}/blocks/${editBlock.id}`, { method:'PUT', body:JSON.stringify(editBlock), headers:{'Content-Type':'application/json'} });
+    const updated = await res.json();
+    setCol(updated); setEditBlock(null);
+    toast('블록이 수정되었습니다');
+  }
+
+  function handleBlockDragStart(idx) { setDragIdx(idx); }
+  async function handleBlockDrop(targetIdx) {
+    if (dragIdx===null || dragIdx===targetIdx) return;
+    const blocks = [...col.blocks].sort((a,b)=>a.order-b.order);
+    const [moved] = blocks.splice(dragIdx,1);
+    blocks.splice(targetIdx,0,moved);
+    const blockIds = blocks.map(b=>b.id);
+    const res = await fetch(`/api/collections/${collectionId}/blocks/reorder`, { method:'PUT', body:JSON.stringify({blockIds}), headers:{'Content-Type':'application/json'} });
+    const updated = await res.json();
+    setCol(updated); setDragIdx(null);
+  }
+
+  function copyShareLink() {
+    const link = `${window.location.href.split('#')[0]}#/c/${col.slug}`;
+    navigator.clipboard.writeText(link).then(()=>toast('링크가 복사되었습니다 📋'));
+  }
+
+  if (!col) return <div className="flex-1 flex items-center justify-center text-gray-400">불러오는 중...</div>;
+
+  const sortedBlocks = [...(col.blocks||[])].sort((a,b)=>a.order-b.order);
+
+  return (
+    <div className="flex-1 p-6 max-w-3xl mx-auto w-full">
+      <div className="flex items-center gap-3 mb-6">
+        <button onClick={()=>setRoute('collections')} className="text-gray-400 hover:text-gray-600">← 뒤로</button>
+        <span className="text-2xl">{col.emoji}</span>
+        <h1 className="text-2xl font-bold flex-1">{col.name}</h1>
+      </div>
+
+      {/* 공개 설정 */}
+      <div className="bg-white rounded-xl border p-4 mb-4 flex items-center justify-between">
+        <div>
+          <div className="font-medium text-sm">공유 설정</div>
+          <div className="text-xs text-gray-400 mt-0.5">{col.isPublic?'현재 공개 상태입니다':'현재 비공개 상태입니다'}</div>
+        </div>
+        <div className="flex items-center gap-3">
+          {col.isPublic && (
+            <button onClick={copyShareLink} className="px-3 py-1.5 border rounded-lg text-sm hover:bg-gray-50 flex items-center gap-1">
+              <span>🔗</span><span>링크 복사</span>
+            </button>
+          )}
+          <div onClick={togglePublic} className={`w-12 h-7 rounded-full cursor-pointer transition-colors relative ${col.isPublic?'bg-primary-500':'bg-gray-200'}`}>
+            <div className={`absolute top-1.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${col.isPublic?'translate-x-7':'translate-x-1'}`}></div>
+          </div>
+        </div>
+      </div>
+
+      {/* 슬러그 편집 */}
+      <div className="bg-white rounded-xl border p-4 mb-4">
+        <div className="font-medium text-sm mb-2">공유 URL 슬러그</div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-400">/c/</span>
+          <input value={slugInput} onChange={e=>{ setSlugInput(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,'')); checkSlug(e.target.value); }}
+            className="flex-1 border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-300" />
+          <button onClick={saveSlug} disabled={slugAvail===false} className="px-3 py-2 bg-primary-500 text-white rounded-lg text-sm disabled:opacity-50">저장</button>
+        </div>
+        {slugAvail===true && <p className="text-xs text-green-500 mt-1">✓ 사용 가능한 슬러그입니다</p>}
+        {slugAvail===false && <p className="text-xs text-red-500 mt-1">✕ 이미 사용 중인 슬러그입니다</p>}
+      </div>
+
+      {/* 블록 목록 */}
+      <div className="bg-white rounded-xl border mb-4">
+        <div className="flex items-center justify-between px-4 py-3 border-b">
+          <span className="font-medium text-sm">블록 ({sortedBlocks.length})</span>
+          <button onClick={()=>setShowAddBlock(true)} className="px-3 py-1.5 bg-primary-500 text-white rounded-lg text-sm hover:bg-primary-600">+ 블록 추가</button>
+        </div>
+        <div className="p-3 space-y-2">
+          {sortedBlocks.map((bl,idx)=>(
+            <div key={bl.id} draggable
+              onDragStart={()=>handleBlockDragStart(idx)}
+              onDragOver={e=>{e.preventDefault();e.currentTarget.classList.add('drag-over');}}
+              onDragLeave={e=>e.currentTarget.classList.remove('drag-over')}
+              onDrop={e=>{e.currentTarget.classList.remove('drag-over');handleBlockDrop(idx);}}
+              className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-grab hover:bg-gray-100">
+              <span className="text-gray-300 cursor-grab">⠿</span>
+              <span className="text-lg">{bl.type==='link'?'🔗':bl.type==='text'?'📝':'🖼'}</span>
+              <div className="flex-1 min-w-0">
+                {bl.type==='link' && <><p className="text-sm font-medium truncate">{bl.title||bl.url}</p><p className="text-xs text-gray-400 truncate">{bl.url}</p></>}
+                {bl.type==='text' && <p className="text-sm truncate">{bl.content}</p>}
+                {bl.type==='image' && <p className="text-sm truncate">{bl.url}</p>}
+              </div>
+              <div className="flex gap-1">
+                <button onClick={()=>setEditBlock({...bl})} className="text-gray-400 hover:text-gray-600 p-1 text-sm">✏️</button>
+                <button onClick={()=>deleteBlock(bl.id)} className="text-gray-400 hover:text-red-500 p-1 text-sm">🗑</button>
+              </div>
+            </div>
+          ))}
+          {sortedBlocks.length===0 && <div className="text-center py-8 text-gray-300 text-sm">블록을 추가해보세요</div>}
+        </div>
+      </div>
+
+      {/* 블록 추가 모달 */}
+      {showAddBlock && (
+        <Modal title="블록 추가" onClose={()=>setShowAddBlock(false)}>
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              {[['link','🔗 링크'],['text','📝 텍스트'],['image','🖼 이미지']].map(([v,l])=>(
+                <button key={v} onClick={()=>setBlockForm(f=>({...f,type:v}))}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${blockForm.type===v?'bg-primary-500 text-white border-primary-500':'hover:bg-gray-50'}`}>{l}</button>
+              ))}
+            </div>
+            {blockForm.type==='link' && <>
+              <input value={blockForm.url} onChange={e=>setBlockForm(f=>({...f,url:e.target.value}))} placeholder="URL" className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-300" />
+              <input value={blockForm.title} onChange={e=>setBlockForm(f=>({...f,title:e.target.value}))} placeholder="제목" className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-300" />
+              <input value={blockForm.description} onChange={e=>setBlockForm(f=>({...f,description:e.target.value}))} placeholder="설명 (선택)" className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-300" />
+            </>}
+            {blockForm.type==='text' && <textarea value={blockForm.content} onChange={e=>setBlockForm(f=>({...f,content:e.target.value}))} placeholder="텍스트 내용" rows={4} className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-300 resize-none" />}
+            {blockForm.type==='image' && <>
+              <input value={blockForm.imageUrl} onChange={e=>setBlockForm(f=>({...f,imageUrl:e.target.value}))} placeholder="이미지 URL" className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-300" />
+              <input value={blockForm.title} onChange={e=>setBlockForm(f=>({...f,title:e.target.value}))} placeholder="대체 텍스트 (선택)" className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-300" />
+            </>}
+            <div className="flex gap-2 justify-end">
+              <button onClick={()=>setShowAddBlock(false)} className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50">취소</button>
+              <button onClick={addBlock} className="px-4 py-2 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600">추가</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* 블록 편집 모달 */}
+      {editBlock && (
+        <Modal title="블록 편집" onClose={()=>setEditBlock(null)}>
+          <div className="space-y-4">
+            {editBlock.type==='link' && <>
+              <input value={editBlock.url||''} onChange={e=>setEditBlock(b=>({...b,url:e.target.value}))} placeholder="URL" className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-300" />
+              <input value={editBlock.title||''} onChange={e=>setEditBlock(b=>({...b,title:e.target.value}))} placeholder="제목" className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-300" />
+              <input value={editBlock.description||''} onChange={e=>setEditBlock(b=>({...b,description:e.target.value}))} placeholder="설명" className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-300" />
+            </>}
+            {editBlock.type==='text' && <textarea value={editBlock.content||''} onChange={e=>setEditBlock(b=>({...b,content:e.target.value}))} rows={4} className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-300 resize-none" />}
+            {editBlock.type==='image' && <>
+              <input value={editBlock.url||''} onChange={e=>setEditBlock(b=>({...b,url:e.target.value}))} placeholder="이미지 URL" className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-300" />
+              <input value={editBlock.alt||''} onChange={e=>setEditBlock(b=>({...b,alt:e.target.value}))} placeholder="대체 텍스트" className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-300" />
+            </>}
+            <div className="flex gap-2 justify-end">
+              <button onClick={()=>setEditBlock(null)} className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50">취소</button>
+              <button onClick={saveBlockEdit} className="px-4 py-2 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600">저장</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// PUBLIC COLLECTION PAGE
+// ============================================================
+function PublicCollectionPage({ slug, setRoute }) {
+  const [col, setCol] = useState(null);
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`/api/collections/public/${slug}`).then(r=>r.json()).then(c=>{
+      setCol(c); setLiked(c.likedByMe); setLikeCount(c.likeCount); setLoading(false);
+      fetch(`/api/collections/${c.id}/view`, { method:'POST' });
+    }).catch(()=>setLoading(false));
+  }, [slug]);
+
+  async function handleLike() {
+    const res = await fetch(`/api/collections/${col.id}/like`, { method:'POST' });
+    const data = await res.json();
+    setLiked(data.liked); setLikeCount(data.likeCount);
+  }
+
+  async function handleLinkClick(url) {
+    window.open(url,'_blank');
+  }
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-400">불러오는 중...</div>;
+  if (!col) return (
+    <div className="min-h-screen flex flex-col items-center justify-center text-gray-400">
+      <div className="text-5xl mb-4">🔍</div>
+      <p className="text-lg font-medium">컬렉션을 찾을 수 없습니다</p>
+      <button onClick={()=>setRoute('collections')} className="mt-4 text-primary-500 hover:underline text-sm">← 돌아가기</button>
+    </div>
+  );
+
+  const sortedBlocks = [...(col.blocks||[])].sort((a,b)=>a.order-b.order);
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* 헤더 */}
+      <div className="bg-white border-b sticky top-0 z-10">
+        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">🔖</span>
+            <span className="font-bold text-primary-600">moaring</span>
+          </div>
+          <button onClick={()=>setRoute('collections')} className="text-sm text-gray-400 hover:text-gray-600">← 앱으로 돌아가기</button>
+        </div>
+      </div>
+
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        {/* 컬렉션 헤더 */}
+        <div className="text-center mb-8">
+          <div className="text-5xl mb-3">{col.emoji}</div>
+          <h1 className="text-3xl font-bold mb-2">{col.name}</h1>
+          {col.description && <p className="text-gray-500">{col.description}</p>}
+          <div className="flex items-center justify-center gap-4 mt-4 text-sm text-gray-400">
+            <span>👁 {col.viewCount} 조회</span>
+            <button onClick={handleLike} className={`flex items-center gap-1 px-3 py-1.5 rounded-full border transition-colors ${liked?'bg-red-50 border-red-200 text-red-500':'hover:bg-gray-50'}`}>
+              <span>{liked?'❤️':'🤍'}</span><span>{likeCount}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 가이드 모드 */}
+        {col.template==='guide' && (
+          <div className="space-y-4">
+            {sortedBlocks.map((bl,idx)=>(
+              <div key={bl.id}>
+                {bl.type==='text' && (
+                  <div className="bg-white rounded-xl border p-5">
+                    <p className="text-gray-700 leading-relaxed">{bl.content}</p>
+                  </div>
+                )}
+                {bl.type==='link' && (
+                  <div className="flex gap-4 bg-white rounded-xl border p-5 hover:shadow-md transition-shadow cursor-pointer" onClick={()=>handleLinkClick(bl.url)}>
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary-100 text-primary-600 font-bold text-sm flex items-center justify-center">
+                      {idx+1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 hover:text-primary-600">{bl.title}</h3>
+                      {bl.description && <p className="text-sm text-gray-500 mt-1">{bl.description}</p>}
+                      <p className="text-xs text-gray-400 mt-1 truncate">{bl.url}</p>
+                    </div>
+                    <span className="text-gray-300 flex-shrink-0">→</span>
+                  </div>
+                )}
+                {bl.type==='image' && (
+                  <div className="bg-white rounded-xl border overflow-hidden">
+                    <img src={bl.url} alt={bl.alt||''} className="w-full object-cover max-h-64" onError={e=>e.target.style.display='none'} />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 프로필 모드 */}
+        {col.template==='profile' && (
+          <div>
+            {sortedBlocks.filter(b=>b.type==='image').map(bl=>(
+              <div key={bl.id} className="flex justify-center mb-6">
+                <img src={bl.url} alt={bl.alt||''} className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg" onError={e=>e.target.style.display='none'} />
+              </div>
+            ))}
+            <div className="space-y-3">
+              {sortedBlocks.filter(b=>b.type==='text').map(bl=>(
+                <div key={bl.id} className="text-center text-gray-600">{bl.content}</div>
+              ))}
+              {sortedBlocks.filter(b=>b.type==='link').map(bl=>(
+                <button key={bl.id} onClick={()=>handleLinkClick(bl.url)}
+                  className="w-full bg-white border rounded-xl p-4 text-center hover:shadow-md transition-shadow flex items-center justify-between">
+                  <span className="font-medium">{bl.title}</span>
+                  <span className="text-gray-400">→</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// SEARCH MODAL (Cmd+K)
+// ============================================================
+function SearchModal({ onClose, setRoute }) {
+  const [q, setQ] = useState('');
+  const [results, setResults] = useState([]);
+  const inputRef = useRef(null);
+
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  useEffect(() => {
+    if (!q.trim()) { setResults([]); return; }
+    const timer = setTimeout(async () => {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      setResults(data);
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [q]);
+
+  function handleSelect(item) {
+    if (item.type==='bookmark') { setRoute('inbox'); }
+    else if (item.type==='collection') { setRoute(`collection-edit:${item.id}`); }
+    onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 modal-backdrop bg-black/40" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl mx-4">
+        <div className="flex items-center gap-3 px-4 py-3 border-b">
+          <span className="text-gray-400">🔍</span>
+          <input ref={inputRef} value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==='Escape'&&onClose()}
+            placeholder="북마크, 컬렉션 검색..." className="flex-1 text-sm outline-none" />
+          <kbd className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">ESC</kbd>
+        </div>
+        <div className="max-h-80 overflow-y-auto">
+          {results.length===0 && q && (
+            <div className="text-center py-8 text-gray-400 text-sm">검색 결과가 없습니다</div>
+          )}
+          {results.length===0 && !q && (
+            <div className="text-center py-8 text-gray-400 text-sm">검색어를 입력하세요</div>
+          )}
+          {results.map(item=>(
+            <button key={item.id} onClick={()=>handleSelect(item)}
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-left">
+              <span className="text-lg flex-shrink-0">{item.type==='bookmark'?'🔖':'✨'}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{item.title||item.name}</p>
+                <p className="text-xs text-gray-400 truncate">{item.url||item.description||''}</p>
+              </div>
+              <span className="text-xs text-gray-300 flex-shrink-0">{item.type==='bookmark'?'북마크':'컬렉션'}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// SETTINGS PAGE
+// ============================================================
+function SettingsPage() {
+  const { user, toast } = useApp();
+
+  async function exportJSON() {
+    const res = await fetch('/api/export/json');
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'moaring-export.json';
+    a.click();
+    toast('JSON 내보내기 완료');
+  }
+
+  async function exportHTML() {
+    const res = await fetch('/api/export/html');
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'moaring-bookmarks.html';
+    a.click();
+    toast('HTML 내보내기 완료');
+  }
+
+  return (
+    <div className="flex-1 p-6 max-w-2xl mx-auto w-full">
+      <h1 className="text-2xl font-bold mb-6">⚙️ 설정</h1>
+
+      {/* 계정 정보 */}
+      <div className="bg-white rounded-xl border p-5 mb-4">
+        <h2 className="font-semibold mb-4">계정 정보</h2>
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold text-xl">
+            {user?.name?.[0]?.toUpperCase()||'U'}
+          </div>
+          <div>
+            <p className="font-medium">{user?.name}</p>
+            <p className="text-sm text-gray-400">{user?.email}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* 데이터 내보내기 */}
+      <div className="bg-white rounded-xl border p-5">
+        <h2 className="font-semibold mb-4">데이터 내보내기</h2>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div>
+              <p className="text-sm font-medium">JSON 형식</p>
+              <p className="text-xs text-gray-400">북마크, 그룹, 컬렉션 전체 데이터</p>
+            </div>
+            <button onClick={exportJSON} className="px-4 py-2 bg-primary-500 text-white rounded-lg text-sm hover:bg-primary-600">
+              내보내기
+            </button>
+          </div>
+          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div>
+              <p className="text-sm font-medium">Chrome 북마크 HTML</p>
+              <p className="text-xs text-gray-400">크롬 브라우저에서 가져올 수 있는 형식</p>
+            </div>
+            <button onClick={exportHTML} className="px-4 py-2 bg-primary-500 text-white rounded-lg text-sm hover:bg-primary-600">
+              내보내기
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 앱 정보 */}
+      <div className="mt-6 text-center text-xs text-gray-300">
+        <p>moaring v0.1.0 · 북마크 매니저 프로토타입</p>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// AUTH PAGE
+// ============================================================
+function AuthPage({ onLogin }) {
+  const [mode, setMode] = useState('login');
+  const [form, setForm] = useState({ email:'', password:'', name:'' });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setLoading(true); setError('');
+    try {
+      const endpoint = mode==='login' ? '/api/auth/login' : '/api/auth/signup';
+      const res = await fetch(endpoint, { method:'POST', body:JSON.stringify(form), headers:{'Content-Type':'application/json'} });
+      const data = await res.json();
+      if (data.token) onLogin(data.user, data.token);
+      else setError('로그인에 실패했습니다');
+    } catch { setError('오류가 발생했습니다'); }
+    setLoading(false);
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-blue-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-8">
+        <div className="text-center mb-8">
+          <div className="text-4xl mb-2">🔖</div>
+          <h1 className="text-2xl font-bold text-primary-600">moaring</h1>
+          <p className="text-sm text-gray-400 mt-1">스마트 북마크 매니저</p>
+        </div>
+
+        <div className="flex bg-gray-100 rounded-xl p-1 mb-6">
+          <button onClick={()=>setMode('login')} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${mode==='login'?'bg-white shadow text-gray-900':'text-gray-500'}`}>로그인</button>
+          <button onClick={()=>setMode('signup')} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${mode==='signup'?'bg-white shadow text-gray-900':'text-gray-500'}`}>회원가입</button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-3">
+          {mode==='signup' && (
+            <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="이름" required
+              className="w-full border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary-300" />
+          )}
+          <input value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))} type="email" placeholder="이메일" required
+            className="w-full border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary-300" />
+          <input value={form.password} onChange={e=>setForm(f=>({...f,password:e.target.value}))} type="password" placeholder="비밀번호" required
+            className="w-full border rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary-300" />
+          {error && <p className="text-red-500 text-xs">{error}</p>}
+          <button type="submit" disabled={loading}
+            className="w-full py-3 bg-primary-500 text-white rounded-xl font-medium hover:bg-primary-600 disabled:opacity-50 transition-colors">
+            {loading ? '처리 중...' : mode==='login' ? '로그인' : '회원가입'}
+          </button>
+        </form>
+
+        <p className="text-center text-xs text-gray-400 mt-4">어떤 이메일/비밀번호든 로그인 가능합니다 (Mock)</p>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// MAIN APP
+// ============================================================
+function App() {
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
+  const [route, setRoute] = useState('inbox');
+  const [toasts, setToasts] = useState([]);
+  const [showSearch, setShowSearch] = useState(false);
+  const [groups, setGroups] = useState([]);
+  const [collections, setCollections] = useState([]);
+
+  // Load groups & collections on login
+  useEffect(() => {
+    if (!user) return;
+    fetch('/api/groups').then(r=>r.json()).then(setGroups);
+    fetch('/api/collections').then(r=>r.json()).then(setCollections);
+  }, [user]);
+
+  // Cmd+K shortcut
+  useEffect(() => {
+    function handler(e) {
+      if ((e.metaKey||e.ctrlKey) && e.key==='k') { e.preventDefault(); setShowSearch(s=>!s); }
+    }
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  // Hash routing
+  useEffect(() => {
+    function onHash() {
+      const hash = window.location.hash.replace('#/','');
+      if (hash.startsWith('c/')) setRoute(`public:${hash.slice(2)}`);
+      else if (hash) setRoute(hash);
+    }
+    window.addEventListener('hashchange', onHash);
+    onHash();
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+
+  function toast(msg, type='success') {
+    const id = Date.now();
+    setToasts(t=>[...t,{id,msg,type}]);
+    setTimeout(()=>setToasts(t=>t.filter(x=>x.id!==id)), 3000);
+  }
+
+  function login(u, t) { setUser(u); setToken(t); }
+  function logout() { setUser(null); setToken(null); setRoute('inbox'); }
+
+  function navigate(r) {
+    setRoute(r);
+    if (r==='inbox') window.location.hash='/inbox';
+    else if (r==='groups') window.location.hash='/groups';
+    else if (r==='collections') window.location.hash='/collections';
+    else if (r==='settings') window.location.hash='/settings';
+    else if (r.startsWith('public:')) window.location.hash=`/c/${r.slice(7)}`;
+  }
+
+  if (!user) return <AuthPage onLogin={login} />;
+
+  // Public collection page (no sidebar)
+  if (route.startsWith('public:')) {
+    const slug = route.slice(7);
+    return (
+      <AppCtx.Provider value={{ user, logout, toast, groups, setGroups, collections, setCollections }}>
+        <ToastContainer toasts={toasts} />
+        <PublicCollectionPage slug={slug} setRoute={navigate} />
+      </AppCtx.Provider>
+    );
+  }
+
+  function renderPage() {
+    if (route==='inbox') return <InboxPage />;
+    if (route==='groups') return <GroupsPage />;
+    if (route==='collections') return <CollectionsPage setRoute={navigate} />;
+    if (route==='settings') return <SettingsPage />;
+    if (route.startsWith('collection-edit:')) return <CollectionEditorPage collectionId={route.slice(16)} setRoute={navigate} />;
+    return <InboxPage />;
+  }
+
+  const activeRoute = route.startsWith('collection-edit:') ? 'collections' : route;
+
+  return (
+    <AppCtx.Provider value={{ user, logout, toast, groups, setGroups, collections, setCollections }}>
+      <ToastContainer toasts={toasts} />
+      {showSearch && <SearchModal onClose={()=>setShowSearch(false)} setRoute={navigate} />}
+
+      <div className="flex h-screen overflow-hidden">
+        <Sidebar route={activeRoute} setRoute={navigate} />
+        <main className="flex-1 overflow-y-auto flex flex-col">
+          {/* 검색 버튼 */}
+          <div className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b px-6 py-2 flex justify-end">
+            <button onClick={()=>setShowSearch(true)}
+              className="flex items-center gap-2 px-3 py-1.5 border rounded-lg text-sm text-gray-400 hover:bg-gray-50 transition-colors">
+              <span>🔍</span>
+              <span>검색</span>
+              <kbd className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">⌘K</kbd>
+            </button>
+          </div>
+          {renderPage()}
+        </main>
+      </div>
+    </AppCtx.Provider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
