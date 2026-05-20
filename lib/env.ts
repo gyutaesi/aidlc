@@ -1,14 +1,14 @@
 import { z } from 'zod'
 
 const EnvSchema = z.object({
-  DATABASE_URL: z.string().url(),
+  DATABASE_URL: z.string().min(1),
   COGNITO_USER_POOL_ID: z.string().min(1),
   COGNITO_CLIENT_ID: z.string().min(1),
   COGNITO_REGION: z.string().min(1),
   AWS_S3_BUCKET_NAME: z.string().min(1),
   AWS_CLOUDFRONT_DOMAIN: z.string().min(1),
   AWS_REGION: z.string().min(1),
-  NEXT_PUBLIC_APP_URL: z.string().url(),
+  NEXT_PUBLIC_APP_URL: z.string().default('http://localhost:3000'),
 })
 
 // 빌드 타임에는 환경 변수가 없을 수 있으므로 런타임에만 검증

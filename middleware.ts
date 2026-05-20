@@ -5,20 +5,36 @@ import { routing } from './lib/i18n/routing'
 
 const intlMiddleware = createMiddleware(routing)
 
+const COGNITO_REGION = process.env.COGNITO_REGION || 'us-east-1'
+
 // JWKS 캐싱 — 모듈 레벨에서 한 번만 초기화
 const JWKS = createRemoteJWKSet(
   new URL(
-    `https://cognito-idp.us-east-1.amazonaws.com/${process.env.COGNITO_USER_POOL_ID}/.well-known/jwks.json`
+    `https://cognito-idp.${COGNITO_REGION}.amazonaws.com/${process.env.COGNITO_USER_POOL_ID}/.well-known/jwks.json`
   )
 )
 
 const PUBLIC_PATHS = ['/c/', '/api/health']
 const AUTH_PATHS = ['/login', '/signup', '/verify']
 
+// CORS: Chrome Extension에서의 API 호출 허용
+function addCorsHeaders(response: NextResponse, request: NextRequest): NextResponse {
+  const origin = request.headers.get('origin') ?? ''
+  // Chrome Extension origin (chrome-extension://*) 허용
+  if (origin.startsWith('chrome-extension://') || origin.startsWith('http://localhost')) {
+    response.headers.set('Access-Control-Allow-Origin', origin)
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS')
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    response.headers.set('Access-Control-Allow-Credentials', 'true')
+    response.headers.set('Access-Control-Max-Age', '86400')
+  }
+  return response
+}
+
 async function verifyToken(token: string): Promise<boolean> {
   try {
     await jwtVerify(token, JWKS, {
-      issuer: `https://cognito-idp.us-east-1.amazonaws.com/${process.env.COGNITO_USER_POOL_ID}`,
+      issuer: `https://cognito-idp.${COGNITO_REGION}.amazonaws.com/${process.env.COGNITO_USER_POOL_ID}`,
     })
     return true
   } catch {
@@ -37,18 +53,30 @@ function getTokenFromRequest(request: NextRequest): string | null {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // CORS Preflight (OPTIONS) 처리
+  if (request.method === 'OPTIONS' && pathname.startsWith('/api/')) {
+    const response = new NextResponse(null, { status: 204 })
+    return addCorsHeaders(response, request)
+  }
+
   // 공개 경로 — 인증/로케일 처리 없이 통과
   if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
-    return NextResponse.next()
+    const response = NextResponse.next()
+    if (pathname.startsWith('/api/')) {
+      return addCorsHeaders(response, request)
+    }
+    return response
   }
 
   // API 경로 인증 처리
   if (pathname.startsWith('/api/')) {
     const token = getTokenFromRequest(request)
     if (!token || !(await verifyToken(token))) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      const errorResponse = NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return addCorsHeaders(errorResponse, request)
     }
-    return NextResponse.next()
+    const response = NextResponse.next()
+    return addCorsHeaders(response, request)
   }
 
   // 로케일 prefix 제거 후 경로 추출 (예: /ko/login → /login)

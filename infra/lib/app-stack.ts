@@ -50,16 +50,7 @@ export class AppStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: AppStackProps) {
     super(scope, id, props)
 
-    const {
-      vpc,
-      albSg,
-      ecsSg,
-      dbSecret,
-      userPool,
-      userPoolClient,
-      bucket,
-      distribution,
-    } = props
+    const { vpc, albSg, ecsSg, dbSecret, userPool, userPoolClient, bucket, distribution } = props
 
     // ECR 레포지토리
     this.ecrRepository = new ecr.Repository(this, 'EcrRepo', {
@@ -94,9 +85,7 @@ export class AppStack extends cdk.Stack {
       assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
       description: 'Role for ECS agent (image pull, log write, secrets fetch)',
       managedPolicies: [
-        iam.ManagedPolicy.fromAwsManagedPolicyName(
-          'service-role/AmazonECSTaskExecutionRolePolicy',
-        ),
+        iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AmazonECSTaskExecutionRolePolicy'),
       ],
     })
     // Secrets Manager 접근 (DB 자격증명)
@@ -114,7 +103,7 @@ export class AppStack extends cdk.Stack {
         resources: [
           `arn:aws:ssm:${this.region}:${this.account}:parameter${Config.parameterStore.pathPrefix}/*`,
         ],
-      }),
+      })
     )
     // S3 버킷 접근 권한
     bucket.grantReadWrite(taskRole)
@@ -128,7 +117,7 @@ export class AppStack extends cdk.Stack {
           'ssmmessages:OpenDataChannel',
         ],
         resources: ['*'],
-      }),
+      })
     )
 
     // Task Definition
@@ -160,13 +149,19 @@ export class AppStack extends cdk.Stack {
         AWS_REGION: this.region,
         DB_NAME: Config.aurora.databaseName,
         DB_PORT: String(Config.aurora.port),
+        COGNITO_REGION: this.region,
+        RUN_MIGRATIONS: 'true',
+        // ALB URL을 앱 URL로 사용 (커스텀 도메인 설정 전)
+        NEXT_PUBLIC_APP_URL: 'http://localhost:3000', // 런타임에 ALB URL로 오버라이드
         // Parameter Store 정적 참조 (CDK가 배포 시점에 값 fetch)
         LOG_LEVEL: ssm.StringParameter.valueForStringParameter(
           this,
-          `${Config.parameterStore.pathPrefix}/log-level`,
+          `${Config.parameterStore.pathPrefix}/log-level`
         ),
         COGNITO_USER_POOL_ID: userPool.userPoolId,
         COGNITO_CLIENT_ID: userPoolClient.userPoolClientId,
+        AWS_S3_BUCKET_NAME: bucket.bucketName,
+        AWS_CLOUDFRONT_DOMAIN: distribution.distributionDomainName,
         S3_BUCKET_NAME: bucket.bucketName,
         CLOUDFRONT_DOMAIN: `https://${distribution.distributionDomainName}`,
       },
@@ -206,9 +201,7 @@ export class AppStack extends cdk.Stack {
       enableExecuteCommand: true,
       minHealthyPercent: Config.ecs.minHealthyPercent,
       maxHealthyPercent: Config.ecs.maxHealthyPercent,
-      healthCheckGracePeriod: cdk.Duration.seconds(
-        Config.ecs.healthCheckGracePeriodSeconds,
-      ),
+      healthCheckGracePeriod: cdk.Duration.seconds(Config.ecs.healthCheckGracePeriodSeconds),
       circuitBreaker: { rollback: true }, // 배포 실패 시 빠른 감지 + 롤백
     })
 

@@ -47,13 +47,14 @@ export function BookmarkCard({
 
   return (
     <div
-      className="bg-card group relative rounded-lg border p-4 shadow-sm transition-shadow hover:shadow-md"
+      className="glass-card group relative cursor-pointer rounded-2xl p-5"
       data-testid={`bookmark-card-${bookmark.id}`}
     >
       {/* 미읽음 표시 */}
       {!bookmark.isRead && (
         <span
-          className="absolute right-3 top-3 h-2 w-2 rounded-full bg-blue-500"
+          className="absolute right-3 top-3 h-2 w-2 animate-pulse rounded-full bg-[#D5BDAF]"
+          style={{ boxShadow: '0 0 8px rgba(213, 189, 175, 0.8)' }}
           aria-label="읽지 않음"
           data-testid={`bookmark-unread-dot-${bookmark.id}`}
         />
@@ -80,12 +81,12 @@ export function BookmarkCard({
         data-testid={`bookmark-title-${bookmark.id}`}
       >
         {bookmark.title}
-        <ExternalLink className="text-muted-foreground ml-1 inline h-3 w-3" />
+        <ExternalLink className="ml-1 inline h-3 w-3 text-muted-foreground" />
       </button>
 
       {/* 도메인 */}
       <p
-        className="text-muted-foreground mb-2 text-xs"
+        className="mb-2 text-xs text-muted-foreground"
         data-testid={`bookmark-domain-${bookmark.id}`}
       >
         {domain}
@@ -94,7 +95,7 @@ export function BookmarkCard({
       {/* 메모 미리보기 */}
       {bookmark.memo && (
         <p
-          className="text-muted-foreground mb-2 line-clamp-2 text-xs"
+          className="mb-2 line-clamp-2 text-xs text-muted-foreground"
           data-testid={`bookmark-memo-${bookmark.id}`}
         >
           {bookmark.memo}
@@ -105,7 +106,16 @@ export function BookmarkCard({
       {bookmark.tags.length > 0 && (
         <div className="mb-2 flex flex-wrap gap-1" data-testid={`bookmark-tags-${bookmark.id}`}>
           {bookmark.tags.map((tag) => (
-            <Badge key={tag.id} variant="secondary" className="text-xs">
+            <Badge
+              key={tag.id}
+              variant="secondary"
+              className="text-xs font-semibold transition-all hover:shadow-lg"
+              style={{
+                background: '#E3D5CA',
+                border: '1px solid #D5BDAF',
+                color: '#6b4b3a',
+              }}
+            >
               {tag.name}
             </Badge>
           ))}
@@ -113,7 +123,7 @@ export function BookmarkCard({
       )}
 
       {/* 저장 날짜 */}
-      <p className="text-muted-foreground text-xs">
+      <p className="text-xs text-muted-foreground">
         {new Date(bookmark.createdAt).toLocaleDateString('ko-KR')}
       </p>
 
