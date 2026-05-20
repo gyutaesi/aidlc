@@ -63,6 +63,7 @@
 - **주요 엔드포인트**:
   - `POST /api/bookmarks` — 북마크 저장 (Extension 포함)
   - `GET /api/bookmarks` — 북마크 목록 조회
+  - `GET /api/bookmarks/recent` — 최근 저장 목록 (Extension 팝업용)
   - `GET /api/groups` — 그룹 목록 (Extension 팝업용)
   - `GET /api/search` — 검색
   - `POST /api/collections/[id]/view` — 조회수 증가
@@ -78,7 +79,10 @@
 
 #### Next.js Middleware (`middleware.ts`)
 - **책임**: 보호된 경로(`/dashboard/**`, `/api/**`) 일괄 JWT 검증
-- **동작**: Authorization 헤더 또는 쿠키에서 토큰 추출 → 유효성 검사 → 무효 시 401/redirect
+- **동작**:
+  - 페이지 경로(`/dashboard/**`): 토큰 없거나 무효 시 `/login`으로 redirect
+  - API 경로(`/api/**`): 토큰 없거나 무효 시 `NextResponse.json({ error: 'Unauthorized' }, { status: 401 })` 반환
+  - 공개 경로(`/c/**`, `/login`, `/signup`): 검증 없이 통과
 
 ---
 

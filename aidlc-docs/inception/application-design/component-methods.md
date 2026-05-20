@@ -35,17 +35,24 @@ delete(userId: string, bookmarkId: string): Promise<void>
 moveToGroup(userId: string, bookmarkId: string, groupId: string): Promise<void>
 
 // 북마크를 컬렉션의 링크 블록으로 추가
-moveToCollection(userId: string, bookmarkId: string, collectionId: string): Promise<void>
-
-// 크롬 북마크 HTML 파싱 → 인박스 일괄 추가
-importFromHtml(userId: string, htmlContent: string): Promise<{ imported: number; failed: number }>
+// (CollectionService에 직접 의존하지 않고 block 데이터를 반환, 호출자가 CollectionService.addBlock() 호출)
+getAsLinkBlock(userId: string, bookmarkId: string): Promise<LinkBlockContent>
 
 // 인박스 목록 조회 (그룹에 미소속인 북마크)
 getInbox(userId: string, options: InboxQueryOptions): Promise<PaginatedResult<Bookmark>>
 // InboxQueryOptions: { sort: 'newest' | 'oldest', filter: 'all' | 'read' | 'unread', page, limit }
 
+// 그룹별 북마크 목록 조회
+getByGroup(userId: string, groupId: string): Promise<Bookmark[]>
+
+// 최근 저장 북마크 목록 (Extension 팝업용)
+getRecent(userId: string, limit?: number): Promise<Bookmark[]>
+
 // 읽음 처리
 markAsRead(userId: string, bookmarkId: string): Promise<void>
+
+// 크롬 북마크 HTML 파싱 → 인박스 일괄 추가
+importFromHtml(userId: string, htmlContent: string): Promise<{ imported: number; failed: number }>
 ```
 
 ---
@@ -115,6 +122,9 @@ isSlugAvailable(slug: string, excludeCollectionId?: string): Promise<boolean>
 // 공개 컬렉션 조회 (비로그인 접근 가능)
 getPublicBySlug(slug: string): Promise<PublicCollection | null>
 
+// 컬렉션 단건 조회 (편집 페이지용)
+getById(userId: string, collectionId: string): Promise<Collection | null>
+
 // 사용자의 컬렉션 목록 조회
 getAll(userId: string): Promise<Collection[]>
 ```
@@ -153,10 +163,10 @@ getOrCreate(userId: string, name: string): Promise<Tag>
 autocomplete(userId: string, prefix: string, limit?: number): Promise<Tag[]>
 
 // 북마크에 연결된 태그 목록 조회
-getByBookmark(bookmarkId: string): Promise<Tag[]>
+getByBookmark(userId: string, bookmarkId: string): Promise<Tag[]>
 
 // 북마크의 태그 일괄 업데이트 (기존 태그 교체)
-setBookmarkTags(bookmarkId: string, tagNames: string[]): Promise<void>
+setBookmarkTags(userId: string, bookmarkId: string, tagNames: string[]): Promise<void>
 ```
 
 ---
@@ -171,8 +181,8 @@ getUploadUrl(userId: string, type: 'collection-image' | 'thumbnail', filename: s
 // S3 key를 CloudFront 공개 URL로 변환
 toPublicUrl(s3Key: string): string
 
-// 파일 삭제
-deleteFile(s3Key: string): Promise<void>
+// 파일 삭제 (userId로 경로 소유권 검증)
+deleteFile(userId: string, s3Key: string): Promise<void>
 ```
 
 ---

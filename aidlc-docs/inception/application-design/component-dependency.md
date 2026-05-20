@@ -12,7 +12,7 @@
 | **API Route Handlers** | AuthService, BookmarkService, GroupService, CollectionService, SearchService, StorageService, CollectionStatsService |
 | **Server Actions** | AuthService, BookmarkService, GroupService, CollectionService, TagService |
 | **BookmarkService** | Prisma, MetadataService, TagService |
-| **GroupService** | Prisma, CollectionService |
+| **GroupService** | Prisma, CollectionService (convertToCollection 시에만) |
 | **CollectionService** | Prisma, StorageService |
 | **MetadataService** | 외부 URL (HTTP fetch) |
 | **SearchService** | Prisma (`$queryRaw`) |
