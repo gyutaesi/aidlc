@@ -10,12 +10,12 @@
 
 ## 실행 체크리스트
 
-- [ ] 설계 질문 답변 수집
-- [ ] components.md 생성
-- [ ] component-methods.md 생성
-- [ ] services.md 생성
-- [ ] component-dependency.md 생성
-- [ ] application-design.md (통합 문서) 생성
+- [x] 설계 질문 답변 수집
+- [x] components.md 생성
+- [x] component-methods.md 생성
+- [x] services.md 생성
+- [x] component-dependency.md 생성
+- [x] application-design.md (통합 문서) 생성
 
 ---
 
@@ -157,7 +157,7 @@ A) `BookmarkService` 내 메서드로 포함 (검색도 북마크 도메인)
 B) 별도 `SearchService` — tsvector 쿼리, 검색 인덱스 관리 담당  
 X) Other (please describe after [Answer]: tag below)
 
-[Answer]: X (Frontend에서 검색 모두 처리)
+[Answer]: B
 
 > **💡 추천: B) SearchService 분리**
 > moaring의 검색은 북마크뿐 아니라 컬렉션 블록 텍스트까지 포함합니다. 즉, 여러 테이블을 가로지르는 쿼리입니다. `BookmarkService`에 넣으면 컬렉션 데이터까지 다루게 되어 단일 책임 원칙이 깨집니다. `SearchService`로 분리하면 tsvector 인덱스 관리, 검색 결과 랭킹, 향후 검색 엔진 교체(OpenSearch 등) 시 변경 범위를 최소화할 수 있습니다.
