@@ -44,8 +44,8 @@
 - [x] Functional Design - COMPLETED (Unit 1: Infrastructure)
 - [x] NFR Requirements - COMPLETED (Unit 1: Infrastructure)
 - [x] NFR Design - COMPLETED (Unit 1: Infrastructure)
-- [ ] Infrastructure Design - EXECUTE
-- [ ] Code Generation - EXECUTE (ALWAYS)
+- [x] Infrastructure Design - COMPLETED (Unit 1: Infrastructure)
+- [x] Code Generation - COMPLETED (Unit 1: Infrastructure)
 
 ### CONSTRUCTION PHASE
 - [ ] Build and Test - EXECUTE (ALWAYS)

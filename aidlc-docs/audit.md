@@ -197,3 +197,52 @@ Updated plan checkboxes and aidlc-state.md.
 **Context**: CONSTRUCTION PHASE - Unit 1 Infrastructure - NFR Design (Review & Fix)
 
 ---
+
+## Unit 1 Infrastructure - NFR Design Approved
+**Timestamp**: 2026-05-20T00:00:21Z
+**User Input**: "응 컴펌할게 다음단계로 가자"
+**AI Response**: NFR Design approved. Committed all changes (f04e1a3). Proceeding to Infrastructure Design stage.
+**Context**: CONSTRUCTION PHASE - Unit 1 Infrastructure - NFR Design (Approved) → Infrastructure Design (Starting)
+
+---
+
+## Unit 1 Infrastructure - Infrastructure Design Completed
+**Timestamp**: 2026-05-20T00:00:22Z
+**User Input**: "응 추천대로 진행하자"
+**AI Response**: Generated 2 Infrastructure Design artifacts:
+- `infrastructure-design.md`: 6개 CDK 스택 → AWS 서비스 매핑 상세 명세. DB 자격증명 Secrets Manager JSON 필드별 개별 주입(DB_HOST/DB_USER/DB_PASSWORD) + 앱 코드 URL 조합 방식 확정. 환경변수 전체 목록(12개), 삭제 정책 요약.
+- `deployment-architecture.md`: 전체 배포 아키텍처 다이어그램, 최초/이후 배포 파이프라인, 스택 의존성 그래프, 인프라 정리 절차, 운영 참고 명령어.
+Updated plan checkboxes and aidlc-state.md.
+**Context**: CONSTRUCTION PHASE - Unit 1 Infrastructure - Infrastructure Design (Completed)
+
+---
+
+## Unit 1 Infrastructure - Infrastructure Design Approved
+**Timestamp**: 2026-05-20T00:00:23Z
+**User Input**: "응 시작하자!"
+**AI Response**: Infrastructure Design approved. Proceeding to Code Generation stage (Part 1: Planning).
+**Context**: CONSTRUCTION PHASE - Unit 1 Infrastructure - Infrastructure Design (Approved) → Code Generation (Starting)
+
+---
+
+## Unit 1 Infrastructure - Code Generation Plan Created
+**Timestamp**: 2026-05-20T00:00:24Z
+**User Input**: N/A (plan creation)
+**AI Response**: Created infrastructure-code-generation-plan.md. 11 steps, 13 files. Awaiting user approval before generation.
+**Context**: CONSTRUCTION PHASE - Unit 1 Infrastructure - Code Generation Part 1 (Planning)
+
+---
+
+## Unit 1 Infrastructure - Code Generation Completed
+**Timestamp**: 2026-05-20T00:00:25Z
+**User Input**: "응 진행하자"
+**AI Response**: Generated 11 files following the approved plan:
+- infra/package.json, tsconfig.json, cdk.json, .gitignore
+- infra/lib/config.ts, network-stack.ts, database-stack.ts, auth-stack.ts, storage-stack.ts, app-stack.ts, config-stack.ts
+- infra/bin/moaring.ts
+- infra/README.md
+- aidlc-docs/construction/infrastructure/code/code-summary.md
+Verified: npm install OK, tsc --noEmit OK, cdk synth OK (after fixing 2 warnings: containerInsights → containerInsightsV2, added circuitBreaker rollback).
+**Context**: CONSTRUCTION PHASE - Unit 1 Infrastructure - Code Generation (Completed)
+
+---

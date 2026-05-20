@@ -1,0 +1,12 @@
+*.js
+!jest.config.js
+*.d.ts
+node_modules
+
+# CDK asset staging directory
+.cdk.staging
+cdk.out
+
+# CDK context (포함하지 않음 — 계정별로 다름)
+cdk.context.json
+.env.deploy
