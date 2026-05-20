@@ -43,7 +43,7 @@
 ### CONSTRUCTION PHASE (per unit)
 - [x] Functional Design (Unit 2: Application) - Completed
 - [x] NFR Requirements (Unit 2: Application) - Completed
-- [ ] NFR Design - EXECUTE
+- [x] NFR Design (Unit 2: Application) - Completed
 - [ ] Infrastructure Design - EXECUTE
 - [ ] Code Generation - EXECUTE (ALWAYS)
 
