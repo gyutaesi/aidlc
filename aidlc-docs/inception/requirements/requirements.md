@@ -99,11 +99,12 @@
 | ID | 요구사항 | 우선순위 |
 |----|----------|----------|
 | FR-02-1 | URL 붙여넣기 시 자동으로 제목/설명/썸네일 fetch (백엔드 서버에서 OG 태그 파싱) | Must |
-| FR-02-2 | 메타데이터 fetch 실패 시 사용자 수동 입력 가능 | Must |
+| FR-02-2 | 메타데이터 fetch 실패 시 사용자 수동 입력 가능, 썸네일 없을 경우 기본 placeholder 표시 | Must |
 | FR-02-3 | 저장 즉시 인박스로 이동 | Must |
 | FR-02-4 | 저장 시 태그 추가 가능 (자유 입력, 사용자별 태그 목록 자동 누적) | Must |
 | FR-02-5 | 저장된 북마크 제목/설명/태그/메모 수정 | Must |
-| FR-02-6 | 크롬 북마크 HTML 파일 업로드 → 자동 파싱 → 인박스 일괄 추가 | Must |
+| FR-02-6 | 북마크 삭제 (그룹/컬렉션 소속 여부와 무관하게 삭제 가능) | Must |
+| FR-02-7 | 크롬 북마크 HTML 파일 업로드 → 자동 파싱 → 인박스 일괄 추가 | Must |
 
 ### FR-03. 인박스
 
@@ -122,7 +123,7 @@
 | ID | 요구사항 | 우선순위 |
 |----|----------|----------|
 | FR-04-1 | 그룹 생성 (이름 + 이모지) | Must |
-| FR-04-2 | 그룹 수정 / 삭제 | Must |
+| FR-04-2 | 그룹 수정 / 삭제 (삭제 시 소속 북마크는 인박스로 복귀) | Must |
 | FR-04-3 | 개인 대시보드에서만 보임 (비공개) | Must |
 | FR-04-4 | Toby 스타일 컬럼 형태로 표시 | Must |
 | FR-04-5 | 그룹 내 북마크 순서 변경 (드래그 앤 드롭) | Must |
@@ -133,7 +134,7 @@
 | ID | 요구사항 | 우선순위 |
 |----|----------|----------|
 | FR-05-1 | 컬렉션 생성 (이름 + 이모지 + 설명) | Must |
-| FR-05-2 | 컬렉션 수정 / 삭제 | Must |
+| FR-05-2 | 컬렉션 수정 / 삭제 (삭제 시 링크 블록이 참조하는 북마크 원본은 유지) | Must |
 | FR-05-3 | 블록 추가: 링크 블록 (URL + 설명 + 태그) | Must |
 | FR-05-4 | 블록 추가: 텍스트 블록 (마크다운 간단 메모) | Must |
 | FR-05-5 | 블록 추가: 이미지 블록 (S3 업로드 또는 URL) | Must |
@@ -145,7 +146,8 @@
 | FR-05-11 | 공유 페이지 템플릿 선택: 가이드 모드 (순서 있는 절차서) | Must |
 | FR-05-12 | 공유 페이지 템플릿 선택: 프로필 모드 (개인 소개 + 링크 나열) | Must |
 | FR-05-13 | 공유 페이지 조회수 + 링크 클릭수 통계 | Must |
-| FR-05-14 | 공유 페이지 좋아요 (익명 가능) | Must |
+| FR-05-14 | 공유 페이지 좋아요 (익명 가능, IP+User-Agent 기반 중복 방지) | Must |
+| FR-05-15 | 공유 페이지는 비로그인 사용자도 접근 가능 (공개 ON 상태일 때) | Must |
 
 ### FR-06. 빠른 검색
 
@@ -162,6 +164,7 @@
 | FR-07-1 | EventBridge Scheduler로 매일 1회 전체 링크 유효성 확인 | Must |
 | FR-07-2 | SQS 큐 + Lambda Worker로 배치 처리 | Must |
 | FR-07-3 | 404 / 접근 불가 링크에 "죽은 링크" 뱃지 표시 | Must |
+| FR-07-4 | 죽은 링크 발생 시 in-app 알림 표시 (이메일 알림은 Post-MVP) | Must |
 
 ### FR-08. Chrome Extension
 
@@ -273,35 +276,45 @@ User
 
 Bookmark
   ├── id, user_id, url, title, description, thumbnail_url
-  ├── status: inbox | grouped | in_collection | archived
+  ├── status: inbox | classified  (classified = 그룹 또는 컬렉션에 속한 상태)
   ├── is_dead: boolean (링크 상태 체크 결과)
-  ├── tags: string[]
-  ├── memo: string (메모)
+  ├── memo: string
   └── created_at, updated_at
+
+BookmarkTag (북마크-태그 관계 테이블)
+  ├── bookmark_id, tag_id
+
+Tag
+  ├── id, user_id, name
+  └── (사용자별 자유 입력 누적, 중복 없이 관리)
 
 Group
   ├── id, user_id, name, emoji, position
-  └── bookmark_groups: BookmarkGroup[] (북마크-그룹 관계, 순서 포함)
+  └── (삭제 시 소속 북마크는 inbox 상태로 복귀)
 
 BookmarkGroup (북마크-그룹 관계 테이블)
   ├── bookmark_id, group_id, position
 
 Collection
   ├── id, user_id, name, emoji, description
-  ├── slug: string (공개 URL 식별자, 커스텀 가능)
+  ├── slug: string (공개 URL 식별자, 커스텀 가능, Unique)
   ├── is_public: boolean
   ├── template: 'guide' | 'profile'
-  ├── view_count, like_count
+  ├── view_count: integer
   └── blocks: Block[] (JSONB)
+  (삭제 시 링크 블록이 참조하는 북마크 원본은 유지)
 
 Block (JSONB 내 구조)
-  ├── id: string (블록 고유 ID)
+  ├── id: string (블록 고유 ID, UUID)
   ├── type: 'link' | 'text' | 'image'
   ├── position: number
-  └── content: { url?, title?, description?, tags?, markdown?, image_url?, click_count? }
+  └── content: { bookmark_id?, url?, title?, description?, tags?, markdown?, image_url? }
 
-Tag
-  └── user_id, name (사용자별 자유 입력 누적)
+CollectionLike (좋아요 중복 방지 테이블)
+  ├── collection_id, fingerprint (IP + User-Agent 해시), created_at
+
+CollectionLinkClick (링크 클릭 통계 테이블)
+  ├── collection_id, block_id, clicked_at
 ```
 
 ---
