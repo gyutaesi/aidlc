@@ -87,3 +87,36 @@
 **Context**: INCEPTION - Units Generation (Completed) → CONSTRUCTION PHASE (Next)
 
 ---
+
+## Session Resumption - Construction Phase Start (Unit 2)
+**Timestamp**: 2026-05-20T00:10:00Z
+**User Input**: "AI DLC 진행 중이고 내가 Unit 2 Next.js를 맡았어."
+**AI Response**: 세션 재개. aidlc-state.md 확인 — INCEPTION 완료, CONSTRUCTION PHASE 시작 필요. Unit 2 (Next.js 앱) Functional Design 단계 시작. functional-design-plan.md 생성 예정.
+**Context**: CONSTRUCTION PHASE - Functional Design (Unit 2: Application) 시작
+
+---
+
+## Functional Design - Question Generation (Unit 2: Application)
+**Timestamp**: 2026-05-20T00:10:01Z
+**User Input**: N/A (자동 진행)
+**AI Response**: application-functional-design-plan.md 및 application-functional-design-questions.md 생성. 19개 질문 작성 (도메인 모델, 비즈니스 로직, 프론트엔드 컴포넌트, 에러 처리 섹션). 사용자 답변 대기 중.
+**Context**: CONSTRUCTION PHASE - Functional Design (Unit 2) - Step 4 완료, Step 5 대기
+
+---
+
+## Functional Design - Answers Received (Unit 2: Application)
+**Timestamp**: 2026-05-20T00:15:00Z
+**User Input**: "답변 완료"
+**AI Response**: 19개 질문 답변 확인. 추천과 다른 항목: Q1=C(자동+명시적), Q3=B(중복허용), Q12=A(카드그리드), Q15=C(로그인만 좋아요), Q19=B(실패목록표시). 모두 명확한 선택. 4개 Functional Design 산출물 생성 시작.
+**Context**: CONSTRUCTION PHASE - Functional Design (Unit 2) - Step 5 완료, Step 6 시작
+
+---
+
+## Functional Design - Completed (Unit 2: Application)
+**Timestamp**: 2026-05-20T00:20:00Z
+**User Input**: "답변 완료"
+**AI Response**: 4개 Functional Design 산출물 생성 완료. domain-entities.md, business-logic-model.md, business-rules.md, frontend-components.md. 체크리스트 전체 완료. aidlc-state.md 업데이트. 사용자 승인 대기.
+**Context**: CONSTRUCTION PHASE - Functional Design (Unit 2) - Step 6 완료, Step 7 (승인 대기)
+
+---
+

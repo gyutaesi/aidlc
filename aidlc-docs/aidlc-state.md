@@ -41,7 +41,7 @@
 - **Next Stage**: CONSTRUCTION PHASE
 
 ### CONSTRUCTION PHASE (per unit)
-- [ ] Functional Design - EXECUTE
+- [x] Functional Design (Unit 2: Application) - Completed
 - [ ] NFR Requirements - EXECUTE
 - [ ] NFR Design - EXECUTE
 - [ ] Infrastructure Design - EXECUTE
