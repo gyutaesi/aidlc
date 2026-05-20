@@ -176,3 +176,43 @@
 
 ---
 
+## Infrastructure Design - Stage Start (Unit 2: Application)
+**Timestamp**: 2026-05-20T00:45:00Z
+**User Input**: "Infrastructure Design 단계로 진행"
+**AI Response**: Infrastructure Design 단계 시작. 기존 설계 아티팩트 분석 후 미결 사항 질문 파일 생성 예정.
+**Context**: CONSTRUCTION PHASE - Infrastructure Design (Unit 2) 시작
+
+---
+
+## Infrastructure Design - Question Generation (Unit 2: Application)
+**Timestamp**: 2026-05-20T00:45:01Z
+**User Input**: N/A (자동 진행)
+**AI Response**: application-infrastructure-design-plan.md 및 application-infrastructure-design-questions.md 생성. 12개 질문 작성 (컨테이너/컴퓨트, DB, 네트워킹, CI/CD, 모니터링 섹션). 사용자 답변 대기 중.
+**Context**: CONSTRUCTION PHASE - Infrastructure Design (Unit 2) - Step 4 완료, Step 5 대기
+
+---
+
+## Infrastructure Design - Answers Received (Unit 2: Application)
+**Timestamp**: 2026-05-20T00:50:00Z
+**User Input**: "답변완료"
+**AI Response**: 12개 질문 답변 확인. 추천과 다른 항목: Q6=C(CloudFront 기본 도메인), Q7=C(1개 AZ), Q9=C(수동 배포), Q11=A(알람 없음), Q12=A(7일 보존). 산출물 생성 시작.
+**Context**: CONSTRUCTION PHASE - Infrastructure Design (Unit 2) - Step 5 완료, Step 6 시작
+
+---
+
+## Infrastructure Design - Completed (Unit 2: Application)
+**Timestamp**: 2026-05-20T00:50:01Z
+**User Input**: "답변완료"
+**AI Response**: 2개 Infrastructure Design 산출물 생성 완료. infrastructure-design.md (10개 섹션: ECS/Fargate, Aurora, Cognito, S3+CloudFront, VPC, ALB, Parameter Store, 모니터링, 배포, 비용), deployment-architecture.md (아키텍처 다이어그램, 네트워크 토폴로지, 배포 흐름, 환경 구성, IAM, Unit 1 의존성). aidlc-state.md 업데이트. 사용자 승인 대기.
+**Context**: CONSTRUCTION PHASE - Infrastructure Design (Unit 2) - 완료, 승인 대기
+
+---
+
+## Infrastructure Design - Region Change (Unit 2: Application)
+**Timestamp**: 2026-05-20T00:55:00Z
+**User Input**: "아 aws 리전을 서울이 아니고 us-east-1으로 해"
+**AI Response**: 리전 변경 ap-northeast-2 → us-east-1. 영향 파일: infrastructure-design.md, deployment-architecture.md, nfr-requirements.md, nfr-design-patterns.md. AZ도 us-east-1a로 변경. 커밋 진행.
+**Context**: CONSTRUCTION PHASE - Infrastructure Design (Unit 2) - 리전 변경 수정
+
+---
+

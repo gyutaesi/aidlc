@@ -184,7 +184,7 @@ Layer 2: API Route Handler / Server Action (Node.js Runtime)
 // jose의 createRemoteJWKSet은 내부적으로 JWKS를 캐싱
 // Edge Runtime에서 전역 변수로 재사용
 const JWKS = createRemoteJWKSet(
-  new URL(`https://cognito-idp.{region}.amazonaws.com/{userPoolId}/.well-known/jwks.json`)
+  new URL(`https://cognito-idp.us-east-1.amazonaws.com/{userPoolId}/.well-known/jwks.json`)
 )
 // 매 요청마다 새로 생성하지 않음 — 모듈 레벨에서 한 번만 초기화
 ```

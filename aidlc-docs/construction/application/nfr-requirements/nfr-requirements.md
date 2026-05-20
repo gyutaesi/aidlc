@@ -137,7 +137,7 @@
   DATABASE_URL                    # Aurora PostgreSQL 연결 문자열
   COGNITO_USER_POOL_ID            # Cognito User Pool ID
   COGNITO_CLIENT_ID               # Cognito App Client ID
-  COGNITO_REGION                  # AWS 리전
+  COGNITO_REGION                  # AWS 리전 (us-east-1)
   AWS_S3_BUCKET_NAME              # S3 버킷명
   AWS_CLOUDFRONT_DOMAIN           # CloudFront 도메인
   AWS_REGION                      # AWS 리전
