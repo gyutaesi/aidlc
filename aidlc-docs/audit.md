@@ -183,3 +183,22 @@
 **Context**: CONSTRUCTION PHASE - Unit 3 Chrome Extension - 전체 단계 완료
 
 ---
+
+## Construction Phase - Build and Test 시작 (Unit 3 단독)
+**Timestamp**: 2026-05-20T02:20:00Z
+**User Input**: "4번을 하고 완료 및 승인이 되면 1번을 진행하는걸로 하자"
+**AI Response**: Build and Test 단계 시작. Unit 1, 2 미구현 상태이므로 Unit 3 단독 빌드 검증 + 인스트럭션 파일 생성. 승인 후 PR 생성 예정.
+**Context**: CONSTRUCTION PHASE - Build and Test (Unit 3 only)
+
+---
+
+## Construction Phase - Build and Test 완료
+**Timestamp**: 2026-05-20T02:40:00Z
+**User Input**: N/A (자동 진행)
+**AI Response**: Build and Test 단계 완료. Unit 3 빌드 검증 통과 (typecheck pass, build success, 232KB < 1MB). 빌드 이슈 2건 수정 (vite-plugin-web-extension additionalInputs 제거, terser 추가). 5개 인스트럭션 문서 생성.
+**Build Status**: Success (Unit 3)
+**Test Status**: Pass (수동 검증 완료, 자동 테스트는 사용자 명시 요청 시 추가)
+**Files Generated**: build-instructions.md, unit-test-instructions.md, integration-test-instructions.md, performance-test-instructions.md, build-and-test-summary.md
+**Context**: CONSTRUCTION PHASE - Build and Test 완료
+
+---

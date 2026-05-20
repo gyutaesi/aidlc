@@ -8,9 +8,6 @@ export default defineConfig({
     react(),
     webExtension({
       manifest: 'public/manifest.json',
-      additionalInputs: {
-        html: ['src/popup/popup.html'],
-      },
     }),
   ],
   resolve: {
