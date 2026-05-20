@@ -384,7 +384,7 @@ function Sidebar({ route, setRoute }) {
 // ============================================================
 // BOOKMARK CARD
 // ============================================================
-function BookmarkCard({ bm, onRead, onDelete, onMove, groups, collections, draggable, onDragStart, onDragOver, onDrop }) {
+function BookmarkCard({ bm, onEdit, onDelete, onMove, groups, draggable, onDragStart, onDragOver, onDrop }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -403,7 +403,7 @@ function BookmarkCard({ bm, onRead, onDelete, onMove, groups, collections, dragg
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDrop={onDrop}
-      className={`card-hover bg-white rounded-xl border p-4 flex gap-3 cursor-pointer ${bm.isRead?'opacity-70':''}`}
+      className="card-hover bg-white rounded-xl border p-4 flex gap-3"
     >
       <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
         <img src={favicon} alt="" className="w-6 h-6" onError={e=>e.target.style.display='none'} />
@@ -414,13 +414,12 @@ function BookmarkCard({ bm, onRead, onDelete, onMove, groups, collections, dragg
             {bm.title}
           </a>
           <div className="flex items-center gap-1 flex-shrink-0">
-            {!bm.isRead && <span className="w-2 h-2 rounded-full bg-primary-500 flex-shrink-0"></span>}
             <div className="relative" ref={menuRef}>
               <button onClick={e=>{e.stopPropagation();setMenuOpen(!menuOpen);}} className="text-gray-400 hover:text-gray-600 p-1 rounded">⋯</button>
               {menuOpen && (
                 <div className="absolute right-0 top-6 bg-white border rounded-xl shadow-lg z-20 py-1 w-44">
-                  {!bm.isRead && <button onClick={()=>{onRead(bm.id);setMenuOpen(false);}} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">✓ 읽음 처리</button>}
-                  <div className="px-4 py-1 text-xs text-gray-400 font-medium">그룹으로 이동</div>
+                  <button onClick={()=>{onEdit(bm);setMenuOpen(false);}} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">✏️ 편집</button>
+                  <div className="px-4 py-1 text-xs text-gray-400 font-medium border-t mt-1">그룹으로 이동</div>
                   {groups.map(g=>(
                     <button key={g.id} onClick={()=>{onMove(bm.id,'group',g.id);setMenuOpen(false);}} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">{g.emoji} {g.name}</button>
                   ))}
@@ -433,6 +432,7 @@ function BookmarkCard({ bm, onRead, onDelete, onMove, groups, collections, dragg
         </div>
         <p className="text-xs text-gray-400 truncate mt-0.5">{domain}</p>
         {bm.description && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{bm.description}</p>}
+        {bm.memo && <p className="text-xs text-amber-600 mt-1 bg-amber-50 px-2 py-1 rounded">📝 {bm.memo}</p>}
         {bm.tags?.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
             {bm.tags.map(t=>(
@@ -446,6 +446,72 @@ function BookmarkCard({ bm, onRead, onDelete, onMove, groups, collections, dragg
 }
 
 // ============================================================
+// BOOKMARK EDIT MODAL
+// ============================================================
+function BookmarkEditModal({ bm, onSave, onClose }) {
+  const [form, setForm] = useState({ title: bm.title||'', description: bm.description||'', memo: bm.memo||'', tagInput: '', tags: bm.tags||[] });
+
+  function addTag(e) {
+    if ((e.key==='Enter'||e.key===',') && form.tagInput.trim()) {
+      e.preventDefault();
+      const tag = form.tagInput.trim().replace(/,$/,'');
+      if (tag && !form.tags.includes(tag)) setForm(f=>({...f, tags:[...f.tags, tag], tagInput:''}));
+      else setForm(f=>({...f, tagInput:''}));
+    }
+  }
+
+  function removeTag(tag) { setForm(f=>({...f, tags:f.tags.filter(t=>t!==tag)})); }
+
+  return (
+    <Modal title="북마크 편집" onClose={onClose}>
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium mb-1 text-gray-700">URL</label>
+          <p className="text-sm text-gray-400 bg-gray-50 px-3 py-2 rounded-lg truncate">{bm.url}</p>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1 text-gray-700">제목</label>
+          <input value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))}
+            className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-300" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1 text-gray-700">설명</label>
+          <textarea value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))}
+            rows={2} className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-300 resize-none" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1 text-gray-700">메모</label>
+          <textarea value={form.memo} onChange={e=>setForm(f=>({...f,memo:e.target.value}))}
+            placeholder="개인 메모를 남겨보세요" rows={2}
+            className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-300 resize-none" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1 text-gray-700">태그</label>
+          <div className="border rounded-lg px-3 py-2 focus-within:ring-2 focus-within:ring-primary-300">
+            <div className="flex flex-wrap gap-1 mb-1">
+              {form.tags.map(t=>(
+                <span key={t} className="flex items-center gap-1 px-2 py-0.5 bg-primary-50 text-primary-600 rounded-full text-xs">
+                  {t}
+                  <button onClick={()=>removeTag(t)} className="hover:text-red-500 leading-none">×</button>
+                </span>
+              ))}
+            </div>
+            <input value={form.tagInput} onChange={e=>setForm(f=>({...f,tagInput:e.target.value}))} onKeyDown={addTag}
+              placeholder="태그 입력 후 Enter" className="text-sm outline-none w-full" />
+          </div>
+          <p className="text-xs text-gray-400 mt-1">Enter 또는 쉼표로 태그 추가</p>
+        </div>
+        <div className="flex gap-2 justify-end pt-2">
+          <button onClick={onClose} className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50">취소</button>
+          <button onClick={()=>onSave({...bm, title:form.title, description:form.description, memo:form.memo, tags:form.tags})}
+            className="px-4 py-2 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600">저장</button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// ============================================================
 // INBOX PAGE
 // ============================================================
 function InboxPage() {
@@ -455,18 +521,15 @@ function InboxPage() {
   const [url, setUrl] = useState('');
   const [adding, setAdding] = useState(false);
   const [sort, setSort] = useState('newest');
-  const [filter, setFilter] = useState('all');
+  const [editBm, setEditBm] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const params = new URLSearchParams({ sort });
-    if (filter==='read') params.set('isRead','true');
-    if (filter==='unread') params.set('isRead','false');
-    const res = await fetch(`/api/bookmarks?${params}`);
+    const res = await fetch(`/api/bookmarks?sort=${sort}`);
     const data = await res.json();
     setBookmarks(data.filter(b=>!b.groupId));
     setLoading(false);
-  }, [sort, filter]);
+  }, [sort]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -484,9 +547,10 @@ function InboxPage() {
     setAdding(false);
   }
 
-  async function handleRead(id) {
-    await fetch(`/api/bookmarks/${id}/read`, { method:'POST' });
-    toast('읽음 처리 완료');
+  async function handleEdit(updated) {
+    await fetch(`/api/bookmarks/${updated.id}`, { method:'PUT', body:JSON.stringify(updated), headers:{'Content-Type':'application/json'} });
+    toast('북마크가 수정되었습니다');
+    setEditBm(null);
     load();
   }
 
@@ -532,13 +596,8 @@ function InboxPage() {
         </button>
       </div>
 
-      {/* 필터/정렬 */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex gap-1">
-          {[['all','전체'],['unread','미읽음'],['read','읽음']].map(([v,l])=>(
-            <button key={v} onClick={()=>setFilter(v)} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${filter===v?'bg-primary-500 text-white':'bg-white border hover:bg-gray-50'}`}>{l}</button>
-          ))}
-        </div>
+      {/* 정렬 */}
+      <div className="flex items-center justify-end mb-4">
         <select value={sort} onChange={e=>setSort(e.target.value)} className="text-sm border rounded-lg px-3 py-1.5 bg-white">
           <option value="newest">최신순</option>
           <option value="oldest">오래된순</option>
@@ -556,10 +615,12 @@ function InboxPage() {
       ) : (
         <div className="space-y-3">
           {bookmarks.map(bm => (
-            <BookmarkCard key={bm.id} bm={bm} onRead={handleRead} onDelete={handleDelete} onMove={handleMove} groups={groups} collections={collections} />
+            <BookmarkCard key={bm.id} bm={bm} onEdit={setEditBm} onDelete={handleDelete} onMove={handleMove} groups={groups} />
           ))}
         </div>
       )}
+
+      {editBm && <BookmarkEditModal bm={editBm} onSave={handleEdit} onClose={()=>setEditBm(null)} />}
     </div>
   );
 }

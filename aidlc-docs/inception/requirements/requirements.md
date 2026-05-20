@@ -101,12 +101,10 @@
 | ID | 요구사항 | 우선순위 |
 |----|----------|----------|
 | FR-03-1 | 분류되지 않은 링크 임시 보관 | Must |
-| FR-03-2 | 인박스 아이템 읽음 처리 | Must |
-| FR-03-3 | 인박스 아이템 → 그룹으로 이동 | Must |
-| FR-03-4 | 인박스 아이템 → 컬렉션으로 이동 | Must |
-| FR-03-5 | 인박스 아이템 삭제 | Must |
-| FR-03-6 | 인박스 정렬 (최신순 / 오래된순) | Must |
-| FR-03-7 | 인박스 필터 (읽음 / 미읽음) | Must |
+| FR-03-2 | 인박스 아이템 → 그룹으로 이동 | Must |
+| FR-03-3 | 인박스 아이템 → 컬렉션으로 이동 | Must |
+| FR-03-4 | 인박스 아이템 삭제 | Must |
+| FR-03-5 | 인박스 정렬 (최신순 / 오래된순) | Must |
 
 ### FR-04. 그룹
 
@@ -257,7 +255,7 @@ Bookmark
   ├── id, user_id, url, title, description, thumbnail_url
   ├── memo: string
   └── created_at, updated_at
-  (소속 여부는 status 필드 없이 BookmarkGroup 관계 테이블 존재 여부로 판단)
+  (소속 여부는 BookmarkGroup 관계 테이블 존재 여부로 판단)
 
 BookmarkTag (북마크-태그 관계 테이블)
   ├── bookmark_id, tag_id
